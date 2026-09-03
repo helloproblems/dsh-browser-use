@@ -9,7 +9,7 @@ kind: "repository"
 
 ## 概述
 
-`dsh-browser-use` 通过参考 DeepSeek Harness storage 子系统的 Hub、Domain、Backend 分层，为 DSH 提供浏览器自动化能力。Hub 定义契约与具名后端注册表，后端包拥有浏览器资源，Domain 选择一个后端并把其工具发布给 DSH。仓库根目录只负责 workspace 与 bundle 装配；所有运行时源码都位于 `packages/browser-use/`。
+`dsh-browser-use` 为 DSH 提供浏览器自动化能力。项目由 Hub、Backend 和 Domain 三层组成：Hub 定义浏览器后端契约与具名注册表，Backend 管理浏览器资源并执行工具，Domain 选择后端并向 DSH 发布工具和设置。仓库根目录负责 workspace 与 bundle 装配；所有运行时源码都位于 `packages/browser-use/`。
 
 ## 包结构
 

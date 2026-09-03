@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-browser-use` adds browser automation to DeepSeek Harness through a layered Hub, Domain, and Backend design modeled after the harness storage subsystem. The Hub defines contracts and a named backend registry, backend packages own browser resources, and the Domain selects one backend and publishes its tools to DSH. The repository root is only the workspace and bundle assembly; all runtime source lives under `packages/browser-use/`.
+`dsh-browser-use` provides browser automation for DSH. The project consists of three layers: the Hub defines browser backend contracts and a named registry, each Backend manages browser resources and executes tools, and the Domain selects a backend and publishes its tools and settings to DSH. The repository root owns workspace and bundle assembly; all runtime source lives under `packages/browser-use/`.
 
 ## Package layout
 
