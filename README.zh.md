@@ -64,19 +64,61 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm pack --dry-run
+pnpm pack:bundle
 ```
 
-workspace 模式为 `packages/*/*`。测试跟随所属 package 存放，`scripts/build.mjs` 会生成四个 Host bundle 和 Domain 客户端模块。
+workspace 模式为 `packages/*/*`。测试跟随所属 package 存放，`scripts/build.mjs` 会生成四个 Host bundle 和 Domain 客户端模块。`pnpm pack --dry-run` 只预览普通 package 内容，不会生成文件。
 
 ## 安装到 DSH
 
-构建完成后，把仓库根目录作为 bundle 包添加：
+本仓库不提供 `dsh` 可执行文件。插件管理要求 `PATH` 中存在 pnpm，并且已经安装 DSH CLI，或者准备好一个可从源码运行的 `deepseek-harness` checkout。
+
+### 通过源码目录安装
+
+先构建本仓库，再使用已安装的 CLI 添加仓库根目录：
 
 ```powershell
-pnpm dsh plugin --profile web add .
+pnpm build
+dsh plugin --profile web add .
 ```
 
-根包只包含 bundle 入口与 patch；四个运行时包通过其 workspace dependencies 安装。
+如果从源码运行 DSH，请先在 `deepseek-harness` checkout 中执行 `pnpm install` 和 `pnpm run build`，然后调用其根目录的 `dsh` script，并把本仓库作为绝对 `file:` spec 传入：
+
+```powershell
+cd C:\path\to\deepseek-harness
+pnpm dsh plugin --profile web add file:C:/path/to/dsh-browser-use
+```
+
+### 通过打包产物安装
+
+在本仓库中创建可供本地单文件安装的 tarball：
+
+```powershell
+pnpm install
+pnpm pack:bundle
+```
+
+该命令会构建 workspace，把四个运行时包作为 bundled dependencies 放入根包，并生成：
+
+```text
+.artifacts/pack/dsh-browser-use-0.3.0.tgz
+```
+
+使用已安装的 CLI 添加该 tarball：
+
+```powershell
+dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.3.0.tgz
+```
+
+也可以使用 `deepseek-harness` 源码 checkout 中的 CLI：
+
+```powershell
+pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.3.0.tgz
+```
+
+本地尚未发布的安装应使用 `pnpm pack:bundle`。普通 `pnpm pack` 会把 `workspace:^` 依赖改写为 registry 版本范围，因此只有配置的 registry 中已经存在匹配版本的 `browser-use`、`browser-use-domain`、`browser-use-chrome` 和 `browser-use-dege` 时，普通根包 tarball 才能安装。
+
+`pnpm dsh` 只在 `deepseek-harness` 源码根目录生效，因为该 package 定义了对应 script；它不能在本插件仓库中运行。添加、移除或更新 bundle 后，需要重启正在运行的 `web` profile。
 
 ## 已知限制
 

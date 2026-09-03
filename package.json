@@ -12,6 +12,7 @@
   "scripts": {
     "clean": "node scripts/clean.mjs",
     "build": "node scripts/build.mjs",
+    "pack:bundle": "pnpm build && node scripts/pack-bundle.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --pool=threads"
   },

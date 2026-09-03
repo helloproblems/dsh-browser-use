@@ -64,19 +64,61 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm pack --dry-run
+pnpm pack:bundle
 ```
 
-The workspace pattern is `packages/*/*`. Tests live with their owning package, and `scripts/build.mjs` emits the four Host bundles plus the Domain client module.
+The workspace pattern is `packages/*/*`. Tests live with their owning package, and `scripts/build.mjs` emits the four Host bundles plus the Domain client module. `pnpm pack --dry-run` only previews the regular package contents and creates no file.
 
 ## Install into DSH
 
-After building, add the repository root as the bundle package:
+This repository does not provide the `dsh` executable. Plugin management requires pnpm on `PATH` plus either an installed DSH CLI or a prepared `deepseek-harness` source checkout.
+
+### Install the source checkout
+
+Build this repository first, then add its root directory with an installed CLI:
 
 ```powershell
-pnpm dsh plugin --profile web add .
+pnpm build
+dsh plugin --profile web add .
 ```
 
-The root package contains only the bundle entry and patch; the four runtime packages are installed through its workspace dependencies.
+When running DSH from source, first run `pnpm install` and `pnpm run build` in the `deepseek-harness` checkout, then invoke its root `dsh` script and pass this repository as an absolute `file:` spec:
+
+```powershell
+cd C:\path\to\deepseek-harness
+pnpm dsh plugin --profile web add file:C:/path/to/dsh-browser-use
+```
+
+### Install a packed bundle
+
+Create a self-contained local-install tarball from this repository:
+
+```powershell
+pnpm install
+pnpm pack:bundle
+```
+
+The command builds the workspace, stages the four runtime packages as bundled dependencies, and writes:
+
+```text
+.artifacts/pack/dsh-browser-use-0.3.0.tgz
+```
+
+Install that tarball with an installed CLI:
+
+```powershell
+dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.3.0.tgz
+```
+
+Or use the CLI from a `deepseek-harness` source checkout:
+
+```powershell
+pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.3.0.tgz
+```
+
+Use `pnpm pack:bundle` for an unpublished local installation. A plain `pnpm pack` rewrites `workspace:^` dependencies to registry version ranges and therefore produces a root tarball that works only when the matching `browser-use`, `browser-use-domain`, `browser-use-chrome`, and `browser-use-dege` packages are available from the configured registry.
+
+`pnpm dsh` works in the `deepseek-harness` source root because that package defines the script; it does not work in this plugin repository. Restart a running `web` profile after adding, removing, or updating a bundle.
 
 ## Known limitations
 
