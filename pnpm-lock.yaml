@@ -8,15 +8,18 @@ importers:
 
   .:
     dependencies:
+      browser-use:
+        specifier: workspace:^
+        version: link:packages/browser-use/browser-use
       browser-use-chrome:
         specifier: workspace:^
-        version: link:packages/browser-use-chrome
+        version: link:packages/browser-use/browser-use-chrome
       browser-use-dege:
         specifier: workspace:^
-        version: link:packages/browser-use-dege
+        version: link:packages/browser-use/browser-use-dege
       browser-use-domain:
         specifier: workspace:^
-        version: link:packages/browser-use-domain
+        version: link:packages/browser-use/browser-use-domain
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -70,7 +73,16 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)
 
-  packages/browser-use-chrome:
+  packages/browser-use/browser-use:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.2
+        version: 4.0.2
+      '@deepseek-ai/dsh-util-values':
+        specifier: 0.1.2-alpha.4
+        version: 0.1.2-alpha.4(@deepseek-ai/cordis@4.0.2)
+
+  packages/browser-use/browser-use-chrome:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -80,7 +92,7 @@ importers:
         version: 0.1.2-alpha.4(@deepseek-ai/cordis@4.0.2)
       browser-use:
         specifier: workspace:^
-        version: link:../..
+        version: link:../browser-use
       chrome-devtools-mcp:
         specifier: 1.8.0
         version: 1.8.0
@@ -89,16 +101,16 @@ importers:
         specifier: ^3.18.2
         version: 3.18.2
 
-  packages/browser-use-dege:
+  packages/browser-use/browser-use-dege:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2
       browser-use:
         specifier: workspace:^
-        version: link:../..
+        version: link:../browser-use
 
-  packages/browser-use-domain:
+  packages/browser-use/browser-use-domain:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
@@ -120,7 +132,7 @@ importers:
         version: 0.1.2-alpha.4(@deepseek-ai/cordis@4.0.2)
       browser-use:
         specifier: workspace:^
-        version: link:../..
+        version: link:../browser-use
     devDependencies:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.1.2-alpha.4

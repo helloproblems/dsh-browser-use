@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { discoverBrowser } from '../packages/browser-use-chrome/src/discovery.js'
+import { discoverBrowser } from '../src/discovery.js'
 
 function fetcher(live: string[]) {
   return vi.fn(async (input: string | URL | Request) => ({ ok: live.some(url => String(input).startsWith(url)), json: async () => ({ webSocketDebuggerUrl: 'ws://example' }) })) as unknown as typeof fetch

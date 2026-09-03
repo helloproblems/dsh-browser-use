@@ -11,11 +11,11 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "browser-use": ["src/index.ts"],
-      "browser-use-chrome": ["packages/browser-use-chrome/src/index.ts"],
-      "browser-use-domain": ["packages/browser-use-domain/src/index.ts"],
-      "browser-use-dege": ["packages/browser-use-dege/src/index.ts"]
+      "browser-use": ["packages/browser-use/browser-use/src/index.ts"],
+      "browser-use-chrome": ["packages/browser-use/browser-use-chrome/src/index.ts"],
+      "browser-use-domain": ["packages/browser-use/browser-use-domain/src/index.ts"],
+      "browser-use-dege": ["packages/browser-use/browser-use-dege/src/index.ts"]
     }
   },
-  "include": ["src", "packages/*/src", "tests"]
+  "include": ["packages/*/*/src", "packages/*/*/tests"]
 }
