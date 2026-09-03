@@ -73,7 +73,6 @@ The workspace pattern is `packages/*/*`. Tests live with their owning package, a
 After building, add the repository root as the bundle package:
 
 ```powershell
-pnpm dsh plugin --profile web remove dsh-chrome-devtools
 pnpm dsh plugin --profile web add .
 ```
 

@@ -73,7 +73,6 @@ workspace 模式为 `packages/*/*`。测试跟随所属 package 存放，`script
 构建完成后，把仓库根目录作为 bundle 包添加：
 
 ```powershell
-pnpm dsh plugin --profile web remove dsh-chrome-devtools
 pnpm dsh plugin --profile web add .
 ```
 
