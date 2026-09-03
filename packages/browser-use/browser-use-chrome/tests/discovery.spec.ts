@@ -1,21 +1,34 @@
 import { describe, expect, it, vi } from 'vitest'
-import { discoverBrowser } from '../src/discovery.js'
+import { browserExecutableCandidates, discoverBrowserExecutable } from '../src/discovery.js'
 
-function fetcher(live: string[]) {
-  return vi.fn(async (input: string | URL | Request) => ({ ok: live.some(url => String(input).startsWith(url)), json: async () => ({ webSocketDebuggerUrl: 'ws://example' }) })) as unknown as typeof fetch
-}
+describe('browser executable discovery', () => {
+  it('includes Chrome and Edge stable locations on Windows', () => {
+    const env = {
+      LOCALAPPDATA: 'C:\\Users\\test\\AppData\\Local',
+      ProgramFiles: 'C:\\Program Files',
+      'ProgramFiles(x86)': 'C:\\Program Files (x86)',
+    }
+    expect(browserExecutableCandidates('chrome', { platformName: 'win32', env, homeDir: 'C:\\Users\\test' }))
+      .toContain('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe')
+    expect(browserExecutableCandidates('edge', { platformName: 'win32', env, homeDir: 'C:\\Users\\test' }))
+      .toContain('C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe')
+  })
 
-describe('discoverBrowser', () => {
-  it('prefers a reachable configured address', async () => {
-    const found = await discoverBrowser({ browserUrl: 'http://127.0.0.1:9333/', fetchImpl: fetcher(['http://127.0.0.1:9333']), homeDir: 'Z:/missing', ports: [9222] })
-    expect(found).toEqual({ url: 'http://127.0.0.1:9333', source: 'configured' })
+  it('returns the first executable candidate', async () => {
+    const accessImpl = vi.fn(async (path: string) => {
+      if (path !== '/browser/two') throw new Error('missing')
+    })
+    await expect(discoverBrowserExecutable('chrome', {
+      candidates: ['/browser/one', '/browser/two', '/browser/three'],
+      accessImpl,
+    })).resolves.toBe('/browser/two')
+    expect(accessImpl.mock.calls.map(call => call[0])).toEqual(['/browser/one', '/browser/two'])
   })
-  it('falls back to scanning local debugging ports', async () => {
-    const found = await discoverBrowser({ fetchImpl: fetcher(['http://127.0.0.1:9224']), homeDir: 'Z:/missing', ports: [9222, 9224] })
-    expect(found).toEqual({ url: 'http://127.0.0.1:9224', source: 'port-scan' })
-  })
-  it('returns undefined when no endpoint responds', async () => {
-    expect(await discoverBrowser({ fetchImpl: fetcher([]), homeDir: 'Z:/missing', ports: [9222] })).toBeUndefined()
+
+  it('returns undefined when no candidate is executable', async () => {
+    await expect(discoverBrowserExecutable('chrome', {
+      candidates: ['/browser/missing'],
+      accessImpl: async () => { throw new Error('missing') },
+    })).resolves.toBeUndefined()
   })
 })
-

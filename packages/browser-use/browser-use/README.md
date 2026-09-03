@@ -110,7 +110,7 @@ The Hub registers no tools and injects no prompts, so it contributes zero direct
 
 - The Hub validates duplicate and missing registrations but does not validate backend names or compare a registry name with `backend.browserType`.
 - Tool catalogs are assumed stable for one Domain activation; dynamic catalog mutation is unsupported.
-- `BrowserUseSettings` currently reflects Chrome-oriented fields and fixes `browserType` to `chrome`; adding a fully different backend may require evolving this shared contract.
+- `BrowserUseSettings` supports Chrome and Edge identities, but the shipped settings surface keeps Edge disabled until a working backend is available.
 - Unregistering never closes a backend. Provider plugins must implement the lifecycle pattern above.
 
 ## Related documentation

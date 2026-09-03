@@ -1,5 +1,5 @@
 ---
-description: "Chrome 后端参考，涵盖地址发现、连接所有权、Agent 隔离上下文与 chrome-devtools-mcp 工具执行。"
+description: "Chrome 后端参考，涵盖可执行文件发现、浏览器所有权、Agent 隔离上下文与 chrome-devtools-mcp 工具执行。"
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`browser-use-chrome` 是 browser-use 家族当前可工作的后端。它注册后端 `chrome`，发布生命周期服务 `browserUse.backend.chrome`，从 `chrome-devtools-mcp@1.8.0` 构建工具目录，并通过一个进程共享 Chrome 连接和每个不透明 owner 一个 `McpContext` 来执行工具。它可以连接现有远程调试地址、发现本地已开启调试的 Chrome，也可以自行启动稳定版 Chrome。
+`browser-use-chrome` 是 browser-use 家族当前可工作的后端。它注册后端 `chrome`，发布生命周期服务 `browserUse.backend.chrome`，从 `chrome-devtools-mcp@1.8.0` 构建工具目录，并通过一个进程共享浏览器和每个不透明 owner 一个 `McpContext` 来执行工具。它会启动配置的浏览器可执行文件；未提供路径时，则由 Puppeteer 解析系统 Chrome 稳定版。
 
 本包只拥有浏览器资源。`browser-use-domain` 拥有 DSH 工具注册、工具超时、设置和 Agent 生命周期。
 
@@ -25,12 +25,11 @@ kind: "package-reference"
     backend: chrome
     headless: false
     browserType: chrome
-    browserUrl: ''
-    autoDiscover: true
+    browserPath: ''
     toolCallTimeoutMs: 120000
 ```
 
-远程浏览器必须暴露 Chrome DevTools HTTP 端点，包括 `/json/version` 与 `webSocketDebuggerUrl`。没有选中可用端点时，后端会请求 `chrome-devtools-mcp` 启动稳定版 Chrome。
+`browserPath` 为空时，Domain 会检索所选浏览器的可执行文件并持久化到 DSH 设置。仍未找到可执行文件时，后端会请求 `chrome-devtools-mcp` 解析并启动 Chrome 稳定版。
 
 ## 配置所有权
 
@@ -38,44 +37,34 @@ kind: "package-reference"
 
 | Domain 字段 | 在本后端中的作用 |
 |---|---|
-| `headless` | 仅在本后端自行启动 Chrome 时传入 |
-| `browserUrl` | 需要发现或连接的远程调试 HTTP 地址 |
-| `autoDiscover` | 启用地址校验、活动端口文件查找和本地端口扫描 |
-| `browserType` | 当前固定为 `chrome` |
+| `headless` | 传给浏览器启动操作 |
+| `browserPath` | 非空时作为 Puppeteer 的 `executablePath` |
+| `browserType` | 当前启用 Chrome；Edge 已预留但在设置页中禁用 |
 
 后端包 schema 也接受默认值为 `120000` 的 `toolCallTimeoutMs`。该字段目前为组合兼容性保留，但 `ChromeBrowserUseBackend` 不读取它；真正生效的工具超时是 `browser-use-domain.config.toolCallTimeoutMs`。
 
 ## 浏览器选择
 
-打开共享浏览器连接时，后端遵循以下规则：
+打开共享浏览器时，后端遵循以下规则：
 
 | 设置 | 行为 |
 |---|---|
-| `autoDiscover: true` 且 `browserUrl` 可访问 | 校验并连接配置地址 |
-| `autoDiscover: true` 且配置地址不可用 | 继续查找活动端口文件，再扫描本地端口 |
-| `autoDiscover: true` 且未发现端点 | 启动稳定版 Chrome |
-| `autoDiscover: false` 且 `browserUrl` 非空 | 不做发现预检，直接连接 |
-| `autoDiscover: false` 且 `browserUrl` 为空 | 启动稳定版 Chrome |
+| `browserPath` 非空 | 直接启动该可执行文件 |
+| `browserPath` 为空 | 启动 Puppeteer 解析到的 Chrome 稳定版 |
 
 ### 发现顺序
 
-`discoverBrowser()` 按严格顺序检查：
+`discoverBrowserExecutable()` 按顺序检查平台安装候选，并返回第一个可执行路径：
 
-1. 配置地址，并移除一个末尾斜杠。
-2. Chrome `DevToolsActivePort` 文件。
-3. `http://127.0.0.1:9222` 到 `:9229`。
+1. Windows 用户目录与 Program Files 中的 Chrome/Edge 路径。
+2. macOS 系统与用户级应用程序包。
+3. Linux 标准二进制目录，再检查 `PATH` 中的目录。
 
-每个候选地址必须在 350 ms 内响应 `<url>/json/version`，并返回字符串类型的 `webSocketDebuggerUrl`。
-
-当前活动端口路径覆盖：
-
-- Windows：`%LOCALAPPDATA%` 下的 Chrome Stable、Beta、Dev 和 Canary。
-- macOS：`~/Library/Application Support` 下的 Google Chrome。
-- Linux：`~/.config/google-chrome/DevToolsActivePort`。
+Domain 会在注册设置命名空间前执行发现；用户设置层尚未保存路径时，会把发现结果持久化。
 
 ## 资源生命周期
 
-- **共享连接：** `browserPromise` 保证并发首次调用复用同一次连接或启动过程。
+- **共享浏览器：** `browserPromise` 保证并发首次调用复用同一次启动过程。
 - **Owner 隔离：** 后端把每个 owner 对象映射到一个待完成或已就绪的 `McpContext`。
 - **Workspace root：** owner 带有 `session.header.cwd` 时，该目录通过文件 URL 作为根 `workspace` 暴露给上下文。
 - **初始页面：** 每个新 owner 上下文打开名为 `browser-use-<owner-id>` 的页面。
@@ -101,20 +90,20 @@ Owner 上下文创建失败时，其缓存 promise 会被移除，后续工具�
 
 - **后端已销毁：** 后续执行拒绝；应重新激活后端插件，而不是复用已关闭实例。
 - **未知工具名：** 在创建 owner 上下文之前拒绝；Domain 应只发布 `tools()` 返回的名称。
-- **连接或启动失败：** 共享浏览器 promise 在 rejection 后清空，后续调用会重新执行发现或启动。
+- **启动失败：** 共享浏览器 promise 在 rejection 后清空，后续调用会重新启动。
 - **工具失败：** 上游 `isError` 内容转换为标准 rejected 工具调用。
-- **发现候选无效：** 忽略该候选并继续检查下一个。
+- **未找到可执行文件：** 发现会继续检查剩余平台候选；最终为空时回退到 Puppeteer 的稳定版通道。
 
 ## 实现地图
 
 | 文件 | 职责 |
 |---|---|
 | [`src/index.ts`](src/index.ts) | 后端注册、浏览器所有权、owner 上下文、工具目录与执行 |
-| [`src/discovery.ts`](src/discovery.ts) | 配置地址校验、活动端口发现和本地端口扫描 |
+| [`src/discovery.ts`](src/discovery.ts) | 共享浏览器可执行文件发现的重新导出 |
 | [`src/json-schema.ts`](src/json-schema.ts) | 面向上游工具输入的最小 Zod 到 JSON Schema 投影 |
 | [`src/config.ts`](src/config.ts) | 后端插件配置 schema |
 | [`src/chrome-types.d.ts`](src/chrome-types.d.ts) | 固定版本上游内部模块的本地声明 |
-| [`tests/discovery.spec.ts`](tests/discovery.spec.ts) | 配置地址与本地端口发现行为 |
+| [`tests/discovery.spec.ts`](tests/discovery.spec.ts) | Chrome/Edge 可执行文件候选与回退行为 |
 | [`tests/json-schema.spec.ts`](tests/json-schema.spec.ts) | 真实上游 Chrome 工具 schema 的投影 |
 
 ## 模型体验
@@ -124,11 +113,11 @@ Owner 上下文创建失败时，其缓存 promise 会被移除，后续工具�
 ## 已知限制
 
 - 实现导入 `chrome-devtools-mcp` 的内部 `build/src` 模块，并固定在版本 `1.8.0`；上游内部变化可能造成破坏。
-- 地址发现只覆盖 Google Chrome 路径，不覆盖 Chromium、Edge 或任意自定义 profile。
+- 可执行文件发现已覆盖常见 Edge 路径，但在完整 Edge 后端可用前，设置页仍禁用 Edge。
 - 上游浏览器 helper 是进程全局单例；重新配置或关闭会对该共享 helper 调用 `closeBrowser()`。
 - 所有 owner 共用一个浏览器连接和一个后端 mutex，因此部分操作可能串行化。
 - Schema 转换有意只支持部分 Zod 节点；不支持的节点会退化为无约束 schema。
-- 测试使用 mock 和 schema 投影，不启动 Chrome，也不验证真实 DevTools 会话。
+- 测试使用 mock 和 schema 投影，不启动浏览器，也不验证真实 DevTools 会话。
 
 ## 相关文档
 

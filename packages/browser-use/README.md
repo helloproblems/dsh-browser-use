@@ -57,8 +57,7 @@ This service-driven activation prevents registration races without making YAML r
     backend: chrome
     headless: false
     browserType: chrome
-    browserUrl: ''
-    autoDiscover: true
+    browserPath: ''
     toolCallTimeoutMs: 120000
 ```
 
@@ -67,7 +66,7 @@ This service-driven activation prevents registration races without making YAML r
 - [Repository guide](../../README.md) for installation, workspace commands, and the shipped bundle.
 - [Hub reference](browser-use/README.md) for the backend contract and registry errors.
 - [Domain reference](browser-use-domain/README.md) for tool naming, settings, and lifecycle behavior.
-- [Chrome backend reference](browser-use-chrome/README.md) for discovery and browser ownership.
+- [Chrome backend reference](browser-use-chrome/README.md) for executable discovery and browser ownership.
 - [Dege placeholder reference](browser-use-dege/README.md) for its intentionally non-functional status.
 
 ## Development

@@ -7,7 +7,9 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 import { BackendRegistry } from './registry.js'
 
-export type { BrowserUseBackend, BrowserUseResult, BrowserUseSettings, BrowserUseTool } from './backend.js'
+export type { BrowserType, BrowserUseBackend, BrowserUseResult, BrowserUseSettings, BrowserUseTool } from './backend.js'
+export { browserExecutableCandidates, discoverBrowserExecutable } from './executable.js'
+export type { BrowserExecutableDiscoveryOptions } from './executable.js'
 export { BrowserUseError } from './error.js'
 export type { BrowserUseErrorCode } from './error.js'
 export { BackendRegistry, BrowserUseBackendRegistry } from './registry.js'

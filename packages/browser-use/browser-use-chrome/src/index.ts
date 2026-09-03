@@ -1,18 +1,17 @@
 import { pathToFileURL } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import { browserUseBackendServiceKey, type BrowserUseBackend, type BrowserUseResult, type BrowserUseSettings, type BrowserUseTool } from 'browser-use'
-import { closeBrowser, ensureBrowserConnected, ensureBrowserLaunched } from 'chrome-devtools-mcp/build/src/browser.js'
+import { closeBrowser, ensureBrowserLaunched } from 'chrome-devtools-mcp/build/src/browser.js'
 import { McpContext } from 'chrome-devtools-mcp/build/src/McpContext.js'
 import { ToolHandler } from 'chrome-devtools-mcp/build/src/ToolHandler.js'
 import { createTools } from 'chrome-devtools-mcp/build/src/tools/tools.js'
 import { Mutex } from 'chrome-devtools-mcp/build/src/third_party/index.js'
 import { Config, type Config as ChromeConfig } from './config.js'
-import { discoverBrowser } from './discovery.js'
 import { zodInputToJsonSchema } from './json-schema.js'
 
 export const name = 'browser-use-chrome'
 export const inject = ['browserUse']
-export { Config, discoverBrowser, zodInputToJsonSchema }
+export { Config, zodInputToJsonSchema }
 
 interface OwnerLike { id?: unknown; session?: { header?: { cwd?: string } } }
 interface SessionRuntime { context: McpContext; handlers: Map<string, ToolHandler> }
@@ -81,11 +80,18 @@ export class ChromeBrowserUseBackend implements BrowserUseBackend {
   private browser(): Promise<any> { this.browserPromise ??= this.openBrowser(); void this.browserPromise.catch(() => { this.browserPromise = undefined }); return this.browserPromise }
   private async openBrowser(): Promise<any> {
     const settings = this.settings()
-    const found = settings.autoDiscover ? await discoverBrowser({ browserUrl: settings.browserUrl || undefined }) : undefined
-    const address = found?.url ?? (settings.browserUrl || undefined)
-    if (address) { this.logger.info(`browser-use-chrome: connecting to ${address}`); return ensureBrowserConnected({ browserURL: address }) }
-    this.logger.info(`browser-use-chrome: launching Chrome (headless=${String(settings.headless)})`)
-    return ensureBrowserLaunched({ headless: settings.headless, channel: 'stable', isolated: false, viaCli: false, chromeArgs: [], ignoreDefaultChromeArgs: [] })
+    const executablePath = settings.browserPath.trim() || undefined
+    const target = executablePath ?? 'the system Chrome installation'
+    this.logger.info(`browser-use-chrome: launching ${target} (headless=${String(settings.headless)})`)
+    return ensureBrowserLaunched({
+      headless: settings.headless,
+      channel: executablePath ? undefined : 'stable',
+      executablePath,
+      isolated: false,
+      viaCli: false,
+      chromeArgs: [],
+      ignoreDefaultChromeArgs: [],
+    })
   }
   private async resetBrowser(): Promise<void> {
     const pending = [...this.sessions.values()]; this.sessions.clear()
@@ -95,7 +101,7 @@ export class ChromeBrowserUseBackend implements BrowserUseBackend {
 }
 
 export function apply(ctx: Context, config: ChromeConfig): void {
-  const fallback: BrowserUseSettings = { headless: false, browserType: 'chrome', browserUrl: '', autoDiscover: true }
+  const fallback: BrowserUseSettings = { headless: false, browserType: 'chrome', browserPath: '' }
   const backend = new ChromeBrowserUseBackend(() => fallback, ctx.logger, config)
   ctx.effect(() => { const unregister = ctx.browserUse.backend.register('chrome', backend); return async () => { unregister(); await backend.close() } })
   ctx.provide(browserUseBackendServiceKey('chrome'), backend)

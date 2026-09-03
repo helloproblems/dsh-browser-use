@@ -1,5 +1,5 @@
 ---
-description: "Chrome backend reference for discovery, connection ownership, per-Agent contexts, and chrome-devtools-mcp tool execution."
+description: "Chrome backend reference for executable discovery, browser ownership, per-Agent contexts, and chrome-devtools-mcp tool execution."
 kind: "package-reference"
 ---
 
@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`browser-use-chrome` is the working backend for the browser-use family. It registers backend `chrome`, publishes lifecycle service `browserUse.backend.chrome`, builds a tool catalog from `chrome-devtools-mcp@1.8.0`, and executes those tools through one process-shared Chrome connection with one `McpContext` per opaque owner. It can connect to an existing remote-debugging endpoint, discover a local debug-enabled Chrome, or launch stable Chrome itself.
+`browser-use-chrome` is the working backend for the browser-use family. It registers backend `chrome`, publishes lifecycle service `browserUse.backend.chrome`, builds a tool catalog from `chrome-devtools-mcp@1.8.0`, and executes those tools through one process-shared browser with one `McpContext` per opaque owner. It launches the configured browser executable, or lets Puppeteer resolve the system Chrome channel when no path is available.
 
 The package owns browser resources only. `browser-use-domain` owns DSH tool registration, tool timeout, settings, and Agent lifecycle.
 
@@ -25,12 +25,11 @@ Mount it between the Hub and Domain in a composition:
     backend: chrome
     headless: false
     browserType: chrome
-    browserUrl: ''
-    autoDiscover: true
+    browserPath: ''
     toolCallTimeoutMs: 120000
 ```
 
-A remote browser must expose the Chrome DevTools HTTP endpoint, including `/json/version` and a `webSocketDebuggerUrl`. When no usable endpoint is selected, the backend asks `chrome-devtools-mcp` to launch stable Chrome.
+When `browserPath` is empty, the Domain detects the selected browser executable and persists it to DSH settings. If no executable is found, the backend still asks `chrome-devtools-mcp` to resolve and launch the stable Chrome channel.
 
 ## Configuration ownership
 
@@ -38,44 +37,34 @@ Browser connection fields are defined by `browser-use-domain` and forwarded thro
 
 | Domain field | Effect in this backend |
 |---|---|
-| `headless` | Passed to Chrome only when this backend launches it |
-| `browserUrl` | Remote-debugging HTTP endpoint to discover or connect to |
-| `autoDiscover` | Enables endpoint validation, active-port lookup, and local port scanning |
-| `browserType` | Currently fixed to `chrome` |
+| `headless` | Passed to the browser launch operation |
+| `browserPath` | Passed to Puppeteer as `executablePath` when non-empty |
+| `browserType` | Chrome is active; Edge is represented but disabled in the settings UI |
 
 The backend package schema also accepts `toolCallTimeoutMs` with default `120000`. This field is currently retained for composition compatibility but is not read by `ChromeBrowserUseBackend`; the effective registered tool timeout is `browser-use-domain.config.toolCallTimeoutMs`.
 
 ## Browser selection
 
-When opening the shared browser connection, the backend follows these rules:
+When opening the shared browser, the backend follows these rules:
 
 | Settings | Behavior |
 |---|---|
-| `autoDiscover: true`, reachable `browserUrl` | Validate and connect to the configured endpoint |
-| `autoDiscover: true`, configured URL unavailable | Continue with active-port files, then local ports |
-| `autoDiscover: true`, no discovered endpoint | Launch stable Chrome |
-| `autoDiscover: false`, non-empty `browserUrl` | Connect directly without discovery preflight |
-| `autoDiscover: false`, empty `browserUrl` | Launch stable Chrome |
+| Non-empty `browserPath` | Launch that executable directly |
+| Empty `browserPath` | Launch Puppeteer's stable Chrome channel |
 
 ### Discovery order
 
-`discoverBrowser()` checks candidates in strict order:
+`discoverBrowserExecutable()` checks platform installation candidates in order and returns the first executable path:
 
-1. The configured URL, normalized by removing one trailing slash.
-2. Chrome `DevToolsActivePort` files.
-3. `http://127.0.0.1:9222` through `:9229`.
+1. Windows per-user and Program Files Chrome/Edge locations.
+2. macOS system and per-user application bundles.
+3. Linux standard binary directories followed by entries from `PATH`.
 
-Each candidate must answer `<url>/json/version` within 350 ms and return a string `webSocketDebuggerUrl`.
-
-Active-port locations currently cover:
-
-- Windows: Chrome Stable, Beta, Dev, and Canary under `%LOCALAPPDATA%`.
-- macOS: Google Chrome under `~/Library/Application Support`.
-- Linux: `~/.config/google-chrome/DevToolsActivePort`.
+The Domain runs discovery before registering the settings namespace and persists a detected path when the user layer does not already contain one.
 
 ## Resource lifecycle
 
-- **Shared connection:** `browserPromise` ensures concurrent first calls share one connect or launch operation.
+- **Shared browser:** `browserPromise` ensures concurrent first calls share one launch operation.
 - **Owner isolation:** the backend maps each owner object to one pending or ready `McpContext`.
 - **Workspace root:** when the owner carries `session.header.cwd`, that directory is exposed to the context as root `workspace` through a file URL.
 - **Initial page:** every new owner context opens a page named `browser-use-<owner-id>`.
@@ -101,20 +90,20 @@ Important upstream options disable usage statistics and experimental categories,
 
 - **Disposed backend:** further execution rejects; reactivate the backend plugin rather than reusing the closed instance.
 - **Unknown tool name:** execution rejects before creating an owner context; the Domain should only publish names from `tools()`.
-- **Connection or launch failure:** the shared browser promise clears after rejection, so a later call retries discovery or launch.
+- **Launch failure:** the shared browser promise clears after rejection, so a later call retries the launch.
 - **Tool failure:** upstream `isError` content becomes a normal rejected tool call.
-- **Bad discovery candidate:** discovery ignores it and continues to the next candidate.
+- **Missing detected executable:** discovery continues through the remaining platform candidates; an empty result falls back to Puppeteer's stable channel.
 
 ## Implementation map
 
 | File | Responsibility |
 |---|---|
 | [`src/index.ts`](src/index.ts) | Backend registration, browser ownership, owner contexts, catalog, and execution |
-| [`src/discovery.ts`](src/discovery.ts) | Configured URL validation, active-port discovery, and local port scanning |
+| [`src/discovery.ts`](src/discovery.ts) | Re-export of shared browser executable discovery |
 | [`src/json-schema.ts`](src/json-schema.ts) | Minimal Zod-to-JSON-Schema projection for upstream tool inputs |
 | [`src/config.ts`](src/config.ts) | Backend plugin configuration schema |
 | [`src/chrome-types.d.ts`](src/chrome-types.d.ts) | Local declarations for pinned upstream internal modules |
-| [`tests/discovery.spec.ts`](tests/discovery.spec.ts) | Configured URL and local port discovery behavior |
+| [`tests/discovery.spec.ts`](tests/discovery.spec.ts) | Chrome/Edge executable candidate and fallback behavior |
 | [`tests/json-schema.spec.ts`](tests/json-schema.spec.ts) | Projection of a real upstream Chrome tool schema |
 
 ## Model experience
@@ -124,11 +113,11 @@ This backend supplies the tool names, descriptions, schemas, and results that th
 ## Known limitations
 
 - The implementation imports `chrome-devtools-mcp` internal `build/src` modules and is pinned to version `1.8.0`; upstream internal changes can break it.
-- Discovery targets Google Chrome paths only, not Chromium, Edge, or arbitrary browser profiles.
+- The settings UI keeps Edge disabled until a complete Edge backend is available, although executable discovery already knows common Edge locations.
 - The upstream browser helper is process-global. Reconfiguration or closure calls `closeBrowser()` for that shared helper.
 - All owners share one browser connection and one backend mutex, so some operations may serialize.
 - Schema conversion is intentionally partial; unsupported Zod nodes degrade to an unconstrained schema.
-- Tests use mocks and schema projection. They do not launch Chrome or validate a live DevTools session.
+- Tests use mocks and schema projection. They do not launch a browser or validate a live DevTools session.
 
 ## Related documentation
 

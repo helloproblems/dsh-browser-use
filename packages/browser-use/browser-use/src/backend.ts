@@ -10,13 +10,14 @@ import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 export interface BrowserUseSettings {
   /** Launch without a visible browser window when the backend starts one. */
   headless: boolean
-  /** Browser engine currently supported by the domain settings schema. */
-  browserType: 'chrome'
-  /** Optional remote-debugging HTTP endpoint. */
-  browserUrl: string
-  /** Whether the backend may discover an existing local browser. */
-  autoDiscover: boolean
+  /** Browser selected by the settings surface. */
+  browserType: BrowserType
+  /** Absolute path of the browser executable. */
+  browserPath: string
 }
+
+/** Browser choices understood by the shared settings contract. */
+export type BrowserType = 'chrome' | 'edge'
 
 /** One backend tool exposed through the browser-use domain. */
 export interface BrowserUseTool {

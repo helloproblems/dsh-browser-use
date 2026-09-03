@@ -57,8 +57,7 @@ browser-use-domain ─┘  解析所选后端 ─> DSH 工具/设置
     backend: chrome
     headless: false
     browserType: chrome
-    browserUrl: ''
-    autoDiscover: true
+    browserPath: ''
     toolCallTimeoutMs: 120000
 ```
 
@@ -67,7 +66,7 @@ browser-use-domain ─┘  解析所选后端 ─> DSH 工具/设置
 - [仓库指南](../../README.zh.md)：安装、workspace 命令和内置 bundle。
 - [Hub 参考](browser-use/README.zh.md)：后端契约与注册表错误。
 - [Domain 参考](browser-use-domain/README.zh.md)：工具命名、设置和生命周期行为。
-- [Chrome 后端参考](browser-use-chrome/README.zh.md)：地址发现与浏览器资源所有权。
+- [Chrome 后端参考](browser-use-chrome/README.zh.md)：可执行文件发现与浏览器资源所有权。
 - [Dege 占位参考](browser-use-dege/README.zh.md)：其有意保持不可用的状态。
 
 ## 开发

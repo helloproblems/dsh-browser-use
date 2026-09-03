@@ -25,8 +25,7 @@ Domain 拥有工具名、工具超时、设置和 Agent 生命周期。它不连
     backend: chrome
     headless: false
     browserType: chrome
-    browserUrl: ''
-    autoDiscover: true
+    browserPath: ''
     toolCallTimeoutMs: 120000
 ```
 
@@ -38,12 +37,11 @@ Domain 拥有工具名、工具超时、设置和 Agent 生命周期。它不连
 |---|---|---|
 | `backend` | `chrome` | 所有浏览器工具使用的已注册后端 |
 | `headless` | `false` | 仅在后端自行启动浏览器时隐藏窗口 |
-| `browserType` | `chrome` | 当前浏览器引擎；schema 只接受 Chrome |
-| `browserUrl` | 空 | Chrome 远程调试 HTTP 地址 |
-| `autoDiscover` | `true` | 允许后端探测配置地址和本地调试端点 |
+| `browserType` | `chrome` | 浏览器标识；GUI 可选择 Chrome，Edge 作为预留项保持禁用 |
+| `browserPath` | 空 | 浏览器可执行文件绝对路径；为空时启动阶段自动检索 |
 | `toolCallTimeoutMs` | `120000` | 应用于本 Domain 发布的每个 DSH 工具定义的超时 |
 
-`backend` 与 `toolCallTimeoutMs` 属于组合配置。暴露给 DSH GUI 的设置命名空间包含 `headless`、`browserType`、`browserUrl` 和 `autoDiscover`。
+`backend` 与 `toolCallTimeoutMs` 属于组合配置。暴露给 DSH GUI 的设置命名空间包含 `headless`、`browserType` 和 `browserPath`。
 
 ## 工具发布
 
@@ -61,14 +59,13 @@ mcp__<backend.browserType>__<backend-tool-name>
 
 ## 设置行为
 
-当 `ctx.settings` 可用时，Host 注册设置命名空间 `browser-use`。变更由 watcher 转发到 `backend.reconfigure(next)`。初始配置或后续重新配置失败只记录 warning，不会移除已经注册的工具目录。
+当 `ctx.settings` 可用时，Host 注册设置命名空间 `browser-use`。未配置浏览器位置时，它会检索所选浏览器的可执行文件，把结果作为解析后的 base，并写入用户设置层。变更由 watcher 转发到 `backend.reconfigure(next)`。初始配置或后续重新配置失败只记录 warning，不会移除已经注册的工具目录。
 
 客户端模块注册的设置区域包含：
 
-- 固定且禁用的 Chrome 浏览器选择器。
+- Chrome/Edge 下拉列表；Edge 后端可用前该选项保持禁用。
 - 无头模式开关。
-- 自动发现开关。
-- 远程调试地址输入框。
+- 可编辑的浏览器可执行文件位置与本机文件选择器。
 - 通过 DSH settings remote API 完成的 revision 感知替换。
 
 ## 生命周期
@@ -94,6 +91,7 @@ mcp__<backend.browserType>__<backend-tool-name>
 |---|---|
 | [`src/index.ts`](src/index.ts) | 后端激活、工具定义、输出渲染、设置转发和 Agent 销毁处理 |
 | [`src/config.ts`](src/config.ts) | 组合 schema、默认值和 `browser-use` 设置命名空间 |
+| [`src/browser-picker.ts`](src/browser-picker.ts) | 同源保护的本机浏览器文件选择端点 |
 | [`src/client/index.tsx`](src/client/index.tsx) | DSH 设置 UI 与远程设置写入 |
 
 ## 模型体验
@@ -103,7 +101,7 @@ mcp__<backend.browserType>__<backend-tool-name>
 ## 已知限制
 
 - 后端选择属于组合期配置，不作为实时 GUI 设置暴露。
-- 即使 Hub 注册表支持多个后端名称，`browserType` 目前仍固定为 Chrome。
+- `browserType` 已包含 Edge，但在可工作的 Edge 后端发布前，GUI 中该选项保持禁用。
 - 后端工具目录在每次激活时只读取一次；设置变更不会增加或删除工具。
 - 重新配置失败只是 warning，而不是插件不健康状态，因此后端无法连接时工具仍可能保持注册。
 - 文本 renderer 忽略非文本内容块；调用方仍会收到原始结构化工具值。

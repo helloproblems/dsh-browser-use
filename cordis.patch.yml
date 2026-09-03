@@ -13,8 +13,7 @@
         backend: chrome
         headless: false
         browserType: chrome
-        browserUrl: ''
-        autoDiscover: true
+        browserPath: ''
         toolCallTimeoutMs: 120000
 
     - id: browser-use-dege

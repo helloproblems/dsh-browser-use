@@ -25,8 +25,7 @@ Mount it with the Hub and at least one working backend:
     backend: chrome
     headless: false
     browserType: chrome
-    browserUrl: ''
-    autoDiscover: true
+    browserPath: ''
     toolCallTimeoutMs: 120000
 ```
 
@@ -38,12 +37,11 @@ The `backend` field is a registry identity. The Domain derives `browserUse.backe
 |---|---|---|
 | `backend` | `chrome` | Registered backend selected for all browser tools |
 | `headless` | `false` | Hide a browser window only when the backend launches one |
-| `browserType` | `chrome` | Current browser engine; the schema accepts only Chrome |
-| `browserUrl` | empty | Chrome remote-debugging HTTP address |
-| `autoDiscover` | `true` | Allow the backend to probe configured and local debugging endpoints |
+| `browserType` | `chrome` | Browser identity; Chrome is selectable and Edge is reserved but disabled in the GUI |
+| `browserPath` | empty | Absolute browser executable path; an empty value is auto-detected at startup |
 | `toolCallTimeoutMs` | `120000` | Timeout applied to every DSH tool definition published by this Domain |
 
-`backend` and `toolCallTimeoutMs` are composition settings. The settings namespace exposed to the DSH GUI contains `headless`, `browserType`, `browserUrl`, and `autoDiscover`.
+`backend` and `toolCallTimeoutMs` are composition settings. The settings namespace exposed to the DSH GUI contains `headless`, `browserType`, and `browserPath`.
 
 ## Tool publication
 
@@ -61,14 +59,13 @@ Backend output keeps the MCP-style `content` array and optional `structuredConte
 
 ## Settings behavior
 
-The Host registers settings namespace `browser-use` when `ctx.settings` is available. Changes are watched and forwarded to `backend.reconfigure(next)`. Initial configuration and later reconfiguration failures are logged as warnings; they do not remove the already registered tool catalog.
+The Host registers settings namespace `browser-use` when `ctx.settings` is available. When no browser path is configured, it detects the selected browser's executable, uses that path as the resolved base, and persists it into the user settings layer. Changes are watched and forwarded to `backend.reconfigure(next)`. Initial configuration and later reconfiguration failures are logged as warnings; they do not remove the already registered tool catalog.
 
 The client module registers a settings section with:
 
-- A fixed, disabled Chrome browser selector.
-- A headless-mode toggle.
-- An automatic-discovery toggle.
-- A remote-debugging URL input.
+- A Chrome/Edge dropdown whose Edge option is disabled until its backend is available.
+- A headless-mode switch.
+- An editable browser executable path with a native file chooser.
 - Revision-aware replacement through the DSH settings remote API.
 
 ## Lifecycle
@@ -94,6 +91,7 @@ The client module registers a settings section with:
 |---|---|
 | [`src/index.ts`](src/index.ts) | Backend activation, tool definitions, output rendering, settings forwarding, and Agent disposal |
 | [`src/config.ts`](src/config.ts) | Composition schema, defaults, and the `browser-use` settings namespace |
+| [`src/browser-picker.ts`](src/browser-picker.ts) | Same-origin native executable chooser endpoint |
 | [`src/client/index.tsx`](src/client/index.tsx) | DSH settings UI and remote settings writes |
 
 ## Model experience
@@ -103,7 +101,7 @@ This is the only package in the family that directly changes model capabilities.
 ## Known limitations
 
 - Backend selection is composition-time configuration and is not exposed as a live GUI setting.
-- `browserType` is fixed to Chrome even though the Hub registry supports multiple backend names.
+- Edge is represented in `browserType` but remains disabled in the GUI until a working Edge backend ships.
 - The backend tool catalog is captured once per activation; settings changes do not add or remove tools.
 - Reconfiguration failures are warnings rather than an unhealthy plugin state, so tools may stay registered while the backend cannot connect.
 - The text renderer ignores non-text content blocks; callers still receive the original structured tool value.
