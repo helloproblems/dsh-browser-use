@@ -1,33 +1,62 @@
-# browser-use
+---
+description: "Repository guide for the dsh-browser-use bundle and its layered browser automation packages."
+kind: "repository"
+---
 
-DSH 浏览器自动化插件，按 `deepseek-harness` 的 storage 架构拆分为 Hub、Domain 和可替换 Backend。
+# dsh-browser-use
 
-> 项目及包名按当前约定使用 `browser` / `dege` 拼写。
+English | [中文](README.zh.md)
 
-## 包结构
+## Summary
 
-所有运行时包统一位于 `packages/browser-use/`，仓库根目录只保留 workspace、构建脚本和 DSH bundle，不再承载 `src`。
+`dsh-browser-use` adds browser automation to DeepSeek Harness through a layered Hub, Domain, and Backend design modeled after the harness storage subsystem. The Hub defines contracts and a named backend registry, backend packages own browser resources, and the Domain selects one backend and publishes its tools to DSH. The repository root is only the workspace and bundle assembly; all runtime source lives under `packages/browser-use/`.
 
-| 目录 | 包 | 职责 |
-| --- | --- | --- |
-| `packages/browser-use/browser-use` | `browser-use` | Hub 服务 `ctx.browserUse`、命名 backend registry、共享契约和 lifecycle service key。自身不操作浏览器。 |
-| `packages/browser-use/browser-use-domain` | `browser-use-domain` | 选择 backend，注册 DSH 工具，管理 settings、session 释放和“浏览器自动化”设置页。 |
-| `packages/browser-use/browser-use-chrome` | `browser-use-chrome` | Chrome backend；托管 `chrome-devtools-mcp`、全局浏览器单例、地址发现和 per-session page context。 |
-| `packages/browser-use/browser-use-dege` | `browser-use-dege` | 未来 Edge backend 的独立包边界；bundle 中默认禁用。 |
+## Package layout
 
-组合顺序与 storage 相同：Hub 先提供 registry，backend 注册并发布 lifecycle service，Domain 等待指定 backend 激活后再注册工具。
+| Directory | Package | Responsibility |
+|---|---|---|
+| [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.md) | `browser-use` | `ctx.browserUse` Hub, backend contracts, registry, lifecycle service keys, and stable Hub errors |
+| [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.md) | `browser-use-domain` | Selects a backend, registers DSH tools, releases per-agent resources, and owns browser settings |
+| [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.md) | `browser-use-chrome` | Chrome backend powered by `chrome-devtools-mcp`, including discovery and per-agent contexts |
+| [`packages/browser-use/browser-use-dege`](packages/browser-use/browser-use-dege/README.md) | `browser-use-dege` | Disabled placeholder for a future Edge backend; it is not a working browser implementation |
 
-Hub 包内部也遵循 storage hub 的边界：`backend.ts` 定义纯契约，`error.ts` 定义稳定错误码，`registry.ts` 管理命名 backend，`index.ts` 仅负责 Cordis Service 装配和公共导出。
+See the [browser-use package group map](packages/browser-use/README.md) for dependency direction and layer ownership.
 
-## Chrome 行为
+## Architecture
 
-- 一个 Host 进程共享一个 Chrome/Puppeteer 连接。
-- 每个 DSH session 创建独立 `McpContext` 和隔离页面。
-- session 销毁时释放对应 context。
-- 设置变化时 Domain 通知 backend 重建浏览器连接。
-- 地址发现顺序：配置地址、`DevToolsActivePort`、本机 `9222-9229`，最后自动启动 Chrome。
+The family keeps composition, semantics, and resources separate:
 
-## 开发
+1. `browser-use` mounts `ctx.browserUse` and exposes a name-to-backend registry. It performs no browser IO.
+2. A backend plugin injects the Hub, registers an implementation, and publishes `browserUse.backend.<name>` as a lifecycle-only Cordis service.
+3. `browser-use-domain` waits for the configured lifecycle service, resolves the backend through the registry, and registers its stable tool catalog with `ctx.tools`.
+4. Tool execution passes the initiating Agent object to the backend as an opaque owner, allowing one shared browser connection with isolated owner contexts.
+5. Settings changes are forwarded to the backend; agent disposal releases only that agent's resources, while plugin disposal closes the complete backend.
+
+Cordis service availability controls activation. YAML row order is for readability and is not the synchronization mechanism.
+
+## Bundle
+
+The root package is `dsh-browser-use`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Hub, Chrome backend, and Domain, while leaving the future Dege backend disabled.
+
+| Row | Default state | Important configuration |
+|---|---|---|
+| `browser-use` | enabled | none |
+| `browser-use-chrome` | enabled | `toolCallTimeoutMs: 120000` |
+| `browser-use-domain` | enabled | backend `chrome`, visible Chrome, automatic discovery, 120-second tool timeout |
+| `browser-use-dege` | disabled | placeholder only |
+
+The effective DSH tool timeout is owned by the Domain configuration. Browser connection settings are also owned by the Domain and forwarded to the selected backend.
+
+## Requirements
+
+- Node.js `^22.19.0` or `>=24.0.0`
+- pnpm `11.7.0`
+- A compatible DeepSeek Harness installation
+- Google Chrome, or a reachable Chrome remote-debugging endpoint
+
+## Development
+
+Run all commands from the repository root:
 
 ```powershell
 pnpm install
@@ -37,11 +66,27 @@ pnpm build
 pnpm pack --dry-run
 ```
 
-## 安装
+The workspace pattern is `packages/*/*`. Tests live with their owning package, and `scripts/build.mjs` emits the four Host bundles plus the Domain client module.
+
+## Install into DSH
+
+After building, add the repository root as the bundle package:
 
 ```powershell
 pnpm dsh plugin --profile web remove dsh-chrome-devtools
-pnpm dsh plugin --profile web add C:\Users\ZK-xuyandong\xyd-workspace\dsh-browser-use
+pnpm dsh plugin --profile web add .
 ```
 
-根包 `dsh-browser-use` 是 bundle 装配包；它的 `cordis.patch.yml` 会挂载 Hub、Chrome backend 和 Domain。`browser-use-dege` 已声明但默认禁用。
+The root package contains only the bundle entry and patch; the four runtime packages are installed through its workspace dependencies.
+
+## Known limitations
+
+- Chrome is the only working backend. `browser-use-dege` registers an empty placeholder and is disabled by default.
+- The shared settings contract currently fixes `browserType` to `chrome`.
+- The Chrome implementation imports pinned internal modules from `chrome-devtools-mcp@1.8.0`; upgrading that dependency requires compatibility verification.
+- Browser state is process-local and is not restored after a Host restart.
+- The current test suite covers the Hub registry, Chrome discovery, and schema conversion, but does not launch a real browser in CI.
+
+## License
+
+[MIT](LICENSE)

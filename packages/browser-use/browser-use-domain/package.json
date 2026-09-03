@@ -5,7 +5,7 @@
   "type": "module",
   "main": "lib/index.js",
   "exports": { ".": "./lib/index.js", "./client": "./lib/client.js", "./package.json": "./package.json" },
-  "files": ["lib"],
+  "files": ["lib", "README.md", "README.zh.md"],
   "dsh": {
     "client": {
       "platform": "web",
