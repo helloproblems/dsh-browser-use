@@ -1,0 +1,23 @@
+- insert:
+    - id: browser-use
+      name: 'browser-use'
+
+    - id: browser-use-chrome
+      name: 'browser-use-chrome'
+      config:
+        toolCallTimeoutMs: 120000
+
+    - id: browser-use-domain
+      name: 'browser-use-domain'
+      config:
+        backend: chrome
+        headless: false
+        browserType: chrome
+        browserUrl: ''
+        autoDiscover: true
+        toolCallTimeoutMs: 120000
+
+    - id: browser-use-dege
+      name: 'browser-use-dege'
+      disabled: true
+

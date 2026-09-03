@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "browser-use": ["src/index.ts"],
+      "browser-use-chrome": ["packages/browser-use-chrome/src/index.ts"],
+      "browser-use-domain": ["packages/browser-use-domain/src/index.ts"],
+      "browser-use-dege": ["packages/browser-use-dege/src/index.ts"]
+    }
+  },
+  "include": ["src", "packages/*/src", "tests"]
+}
