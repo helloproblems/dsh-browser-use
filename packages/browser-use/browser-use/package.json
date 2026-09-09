@@ -12,10 +12,10 @@
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-util-values": "0.1.2-alpha.5"
+    "@deepseek-ai/dsh-util-values": "0.1.5-alpha.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-util-values": "0.1.2-alpha.5"
+    "@deepseek-ai/dsh-util-values": "0.1.5-alpha.1"
   }
 }
