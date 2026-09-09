@@ -61,8 +61,8 @@ kind: "repository"
 ```powershell
 pnpm install
 pnpm typecheck
-pnpm test
 pnpm build
+pnpm test
 pnpm pack --dry-run
 pnpm pack:bundle
 ```
