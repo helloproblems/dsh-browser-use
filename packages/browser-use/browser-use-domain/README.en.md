@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use-domain
 
-English | [中文](README.zh.md)
+English | [中文](README.md)
 
 ## Summary
 
@@ -109,7 +109,7 @@ This is the only package in the family that directly changes model capabilities.
 
 ## Related documentation
 
-- [Package group map](../README.md)
-- [Hub reference](../browser-use/README.md)
-- [Chrome backend reference](../browser-use-chrome/README.md)
-- [Repository guide](../../../README.md)
+- [Package group map](../README.en.md)
+- [Hub reference](../browser-use/README.en.md)
+- [Chrome backend reference](../browser-use-chrome/README.en.md)
+- [Repository guide](../../../README.en.md)

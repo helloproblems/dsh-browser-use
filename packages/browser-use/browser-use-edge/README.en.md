@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use-edge
 
-English | [中文](README.zh.md)
+English | [中文](README.md)
 
 ## Summary
 
@@ -73,8 +73,8 @@ None in the shipped bundle because the package is disabled. Even when manually e
 
 ## Related documentation
 
-- [Package group map](../README.md)
-- [Hub backend contract](../browser-use/README.md)
-- [Domain reference](../browser-use-domain/README.md)
-- [Working Chrome backend](../browser-use-chrome/README.md)
-- [Repository guide](../../../README.md)
+- [Package group map](../README.en.md)
+- [Hub backend contract](../browser-use/README.en.md)
+- [Domain reference](../browser-use-domain/README.en.md)
+- [Working Chrome backend](../browser-use-chrome/README.en.md)
+- [Repository guide](../../../README.en.md)

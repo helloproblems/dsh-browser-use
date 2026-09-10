@@ -5,7 +5,7 @@ kind: "package-group"
 
 # packages/browser-use
 
-[English](README.md) | 中文
+[English](README.en.md) | 中文
 
 ## 概述
 
@@ -15,10 +15,10 @@ browser-use 包组为 DSH 组合提供模型可调用的浏览器自动化能力
 
 | 包 | 分层 | 运行时贡献 |
 |---|---|---|
-| [`browser-use`](browser-use/README.zh.md) | Hub | 提供 `ctx.browserUse`、后端契约和具名注册表 |
-| [`browser-use-domain`](browser-use-domain/README.zh.md) | Domain | 发布 `mcp__<browser>__*` 工具和“浏览器自动化”设置区 |
-| [`browser-use-chrome`](browser-use-chrome/README.zh.md) | Backend | 注册后端 `chrome` 和生命周期服务 `browserUse.backend.chrome` |
-| [`browser-use-edge`](browser-use-edge/README.zh.md) | Backend 占位 | 注册后端 `edge`；在内置 bundle 中禁用且不暴露工具 |
+| [`browser-use`](browser-use/README.md) | Hub | 提供 `ctx.browserUse`、后端契约和具名注册表 |
+| [`browser-use-domain`](browser-use-domain/README.md) | Domain | 发布 `mcp__<browser>__*` 工具和“浏览器自动化”设置区 |
+| [`browser-use-chrome`](browser-use-chrome/README.md) | Backend | 注册后端 `chrome` 和生命周期服务 `browserUse.backend.chrome` |
+| [`browser-use-edge`](browser-use-edge/README.md) | Backend 占位 | 注册后端 `edge`；在内置 bundle 中禁用且不暴露工具 |
 
 ## 依赖方向
 
@@ -63,11 +63,11 @@ browser-use-domain ─┘  解析所选后端 ─> DSH 工具/设置
 
 ## 文档地图
 
-- [仓库指南](../../README.zh.md)：安装、workspace 命令和内置 bundle。
-- [Hub 参考](browser-use/README.zh.md)：后端契约与注册表错误。
-- [Domain 参考](browser-use-domain/README.zh.md)：工具命名、设置和生命周期行为。
-- [Chrome 后端参考](browser-use-chrome/README.zh.md)：可执行文件发现与浏览器资源所有权。
-- [Edge 占位参考](browser-use-edge/README.zh.md)：其有意保持不可用的状态。
+- [仓库指南](../../README.md)：安装、workspace 命令和内置 bundle。
+- [Hub 参考](browser-use/README.md)：后端契约与注册表错误。
+- [Domain 参考](browser-use-domain/README.md)：工具命名、设置和生命周期行为。
+- [Chrome 后端参考](browser-use-chrome/README.md)：可执行文件发现与浏览器资源所有权。
+- [Edge 占位参考](browser-use-edge/README.md)：其有意保持不可用的状态。
 
 ## 开发
 

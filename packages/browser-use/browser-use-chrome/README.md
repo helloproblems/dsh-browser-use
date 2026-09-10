@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use-chrome
 
-[English](README.md) | 中文
+[English](README.en.md) | 中文
 
 ## 概述
 
@@ -121,7 +121,7 @@ Owner 上下文创建失败时，其缓存 promise 会被移除，后续工具�
 
 ## 相关文档
 
-- [包组地图](../README.zh.md)
-- [Hub 参考](../browser-use/README.zh.md)
-- [Domain 参考](../browser-use-domain/README.zh.md)
-- [仓库指南](../../../README.zh.md)
+- [包组地图](../README.md)
+- [Hub 参考](../browser-use/README.md)
+- [Domain 参考](../browser-use-domain/README.md)
+- [仓库指南](../../../README.md)

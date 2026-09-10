@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use
 
-English | [中文](README.zh.md)
+English | [中文](README.md)
 
 ## Summary
 
@@ -115,7 +115,7 @@ The Hub registers no tools and injects no prompts, so it contributes zero direct
 
 ## Related documentation
 
-- [Package group map](../README.md)
-- [Domain reference](../browser-use-domain/README.md)
-- [Chrome backend reference](../browser-use-chrome/README.md)
-- [Repository guide](../../../README.md)
+- [Package group map](../README.en.md)
+- [Domain reference](../browser-use-domain/README.en.md)
+- [Chrome backend reference](../browser-use-chrome/README.en.md)
+- [Repository guide](../../../README.en.md)

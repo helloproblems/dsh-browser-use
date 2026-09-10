@@ -5,7 +5,7 @@ kind: "package-group"
 
 # packages/browser-use
 
-English | [中文](README.zh.md)
+English | [中文](README.md)
 
 ## Summary
 
@@ -15,10 +15,10 @@ The browser-use package group gives a DSH composition model-callable browser aut
 
 | Package | Layer | Runtime contribution |
 |---|---|---|
-| [`browser-use`](browser-use/README.md) | Hub | Provides `ctx.browserUse`, backend contracts, and the named registry |
-| [`browser-use-domain`](browser-use-domain/README.md) | Domain | Publishes `mcp__<browser>__*` tools and the browser automation settings section |
-| [`browser-use-chrome`](browser-use-chrome/README.md) | Backend | Registers backend `chrome` and lifecycle service `browserUse.backend.chrome` |
-| [`browser-use-edge`](browser-use-edge/README.md) | Backend placeholder | Registers backend `edge`; disabled in the shipped bundle and exposes no tools |
+| [`browser-use`](browser-use/README.en.md) | Hub | Provides `ctx.browserUse`, backend contracts, and the named registry |
+| [`browser-use-domain`](browser-use-domain/README.en.md) | Domain | Publishes `mcp__<browser>__*` tools and the browser automation settings section |
+| [`browser-use-chrome`](browser-use-chrome/README.en.md) | Backend | Registers backend `chrome` and lifecycle service `browserUse.backend.chrome` |
+| [`browser-use-edge`](browser-use-edge/README.en.md) | Backend placeholder | Registers backend `edge`; disabled in the shipped bundle and exposes no tools |
 
 ## Dependency direction
 
@@ -63,11 +63,11 @@ This service-driven activation prevents registration races without making YAML r
 
 ## Documentation map
 
-- [Repository guide](../../README.md) for installation, workspace commands, and the shipped bundle.
-- [Hub reference](browser-use/README.md) for the backend contract and registry errors.
-- [Domain reference](browser-use-domain/README.md) for tool naming, settings, and lifecycle behavior.
-- [Chrome backend reference](browser-use-chrome/README.md) for executable discovery and browser ownership.
-- [Edge placeholder reference](browser-use-edge/README.md) for its intentionally non-functional status.
+- [Repository guide](../../README.en.md) for installation, workspace commands, and the shipped bundle.
+- [Hub reference](browser-use/README.en.md) for the backend contract and registry errors.
+- [Domain reference](browser-use-domain/README.en.md) for tool naming, settings, and lifecycle behavior.
+- [Chrome backend reference](browser-use-chrome/README.en.md) for executable discovery and browser ownership.
+- [Edge placeholder reference](browser-use-edge/README.en.md) for its intentionally non-functional status.
 
 ## Development
 

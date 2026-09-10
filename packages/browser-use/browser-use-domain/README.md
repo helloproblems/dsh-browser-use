@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use-domain
 
-[English](README.md) | 中文
+[English](README.en.md) | 中文
 
 ## 概述
 
@@ -109,7 +109,7 @@ mcp__<backend.browserType>__<backend-tool-name>
 
 ## 相关文档
 
-- [包组地图](../README.zh.md)
-- [Hub 参考](../browser-use/README.zh.md)
-- [Chrome 后端参考](../browser-use-chrome/README.zh.md)
-- [仓库指南](../../../README.zh.md)
+- [包组地图](../README.md)
+- [Hub 参考](../browser-use/README.md)
+- [Chrome 后端参考](../browser-use-chrome/README.md)
+- [仓库指南](../../../README.md)

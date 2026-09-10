@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use-chrome
 
-English | [中文](README.zh.md)
+English | [中文](README.md)
 
 ## Summary
 
@@ -121,7 +121,7 @@ This backend supplies the tool names, descriptions, schemas, and results that th
 
 ## Related documentation
 
-- [Package group map](../README.md)
-- [Hub reference](../browser-use/README.md)
-- [Domain reference](../browser-use-domain/README.md)
-- [Repository guide](../../../README.md)
+- [Package group map](../README.en.md)
+- [Hub reference](../browser-use/README.en.md)
+- [Domain reference](../browser-use-domain/README.en.md)
+- [Repository guide](../../../README.en.md)

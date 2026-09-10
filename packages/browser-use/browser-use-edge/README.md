@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use-edge
 
-[English](README.md) | 中文
+[English](README.en.md) | 中文
 
 ## 概述
 
@@ -73,8 +73,8 @@ kind: "package-reference"
 
 ## 相关文档
 
-- [包组地图](../README.zh.md)
-- [Hub 后端契约](../browser-use/README.zh.md)
-- [Domain 参考](../browser-use-domain/README.zh.md)
-- [可工作的 Chrome 后端](../browser-use-chrome/README.zh.md)
-- [仓库指南](../../../README.zh.md)
+- [包组地图](../README.md)
+- [Hub 后端契约](../browser-use/README.md)
+- [Domain 参考](../browser-use-domain/README.md)
+- [可工作的 Chrome 后端](../browser-use-chrome/README.md)
+- [仓库指南](../../../README.md)

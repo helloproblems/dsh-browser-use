@@ -5,7 +5,7 @@ kind: "repository"
 
 # dsh-browser-use
 
-English | [中文](README.zh.md)
+English | [中文](README.md)
 
 ## Summary
 
@@ -15,12 +15,12 @@ English | [中文](README.zh.md)
 
 | Directory | Package | Responsibility |
 |---|---|---|
-| [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.md) | `browser-use` | `ctx.browserUse` Hub, backend contracts, registry, lifecycle service keys, and stable Hub errors |
-| [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.md) | `browser-use-domain` | Selects a backend, registers DSH tools, releases per-agent resources, and owns browser settings |
-| [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.md) | `browser-use-chrome` | Chrome backend powered by `chrome-devtools-mcp`, including discovery and per-agent contexts |
-| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.md) | `browser-use-edge` | Disabled placeholder for a future Edge backend; it is not a working browser implementation |
+| [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.en.md) | `browser-use` | `ctx.browserUse` Hub, backend contracts, registry, lifecycle service keys, and stable Hub errors |
+| [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.en.md) | `browser-use-domain` | Selects a backend, registers DSH tools, releases per-agent resources, and owns browser settings |
+| [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.en.md) | `browser-use-chrome` | Chrome backend powered by `chrome-devtools-mcp`, including discovery and per-agent contexts |
+| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.en.md) | `browser-use-edge` | Disabled placeholder for a future Edge backend; it is not a working browser implementation |
 
-See the [browser-use package group map](packages/browser-use/README.md) for dependency direction and layer ownership.
+See the [browser-use package group map](packages/browser-use/README.en.md) for dependency direction and layer ownership.
 
 ## Architecture
 

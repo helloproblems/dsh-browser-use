@@ -5,7 +5,7 @@ kind: "repository"
 
 # dsh-browser-use
 
-[English](README.md) | 中文
+[English](README.en.md) | 中文
 
 ## 概述
 
@@ -15,12 +15,12 @@ kind: "repository"
 
 | 目录 | 包 | 职责 |
 |---|---|---|
-| [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.zh.md) | `browser-use` | `ctx.browserUse` Hub、后端契约、注册表、生命周期服务键和稳定 Hub 错误 |
-| [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.zh.md) | `browser-use-domain` | 选择后端、注册 DSH 工具、释放 Agent 资源并管理浏览器设置 |
-| [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.zh.md) | `browser-use-chrome` | 基于 `chrome-devtools-mcp` 的 Chrome 后端，包括地址发现与 Agent 隔离上下文 |
-| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.zh.md) | `browser-use-edge` | 面向未来 Edge 后端的禁用占位包；当前不是可工作的浏览器实现 |
+| [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.md) | `browser-use` | `ctx.browserUse` Hub、后端契约、注册表、生命周期服务键和稳定 Hub 错误 |
+| [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.md) | `browser-use-domain` | 选择后端、注册 DSH 工具、释放 Agent 资源并管理浏览器设置 |
+| [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.md) | `browser-use-chrome` | 基于 `chrome-devtools-mcp` 的 Chrome 后端，包括地址发现与 Agent 隔离上下文 |
+| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.md) | `browser-use-edge` | 面向未来 Edge 后端的禁用占位包；当前不是可工作的浏览器实现 |
 
-依赖方向与各层所有权见 [browser-use 包组地图](packages/browser-use/README.zh.md)。
+依赖方向与各层所有权见 [browser-use 包组地图](packages/browser-use/README.md)。
 
 ## 架构
 

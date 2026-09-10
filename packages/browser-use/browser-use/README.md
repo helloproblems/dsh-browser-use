@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use
 
-[English](README.md) | 中文
+[English](README.en.md) | 中文
 
 ## 概述
 
@@ -115,7 +115,7 @@ Hub 不注册工具，也不注入提示词，因此不会直接增加任何请�
 
 ## 相关文档
 
-- [包组地图](../README.zh.md)
-- [Domain 参考](../browser-use-domain/README.zh.md)
-- [Chrome 后端参考](../browser-use-chrome/README.zh.md)
-- [仓库指南](../../../README.zh.md)
+- [包组地图](../README.md)
+- [Domain 参考](../browser-use-domain/README.md)
+- [Chrome 后端参考](../browser-use-chrome/README.md)
+- [仓库指南](../../../README.md)
