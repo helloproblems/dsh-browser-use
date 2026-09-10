@@ -68,6 +68,8 @@ The client module registers a settings section with:
 - An editable browser executable path with a native file chooser.
 - Revision-aware replacement through the DSH settings remote API.
 
+The file chooser starts from the entered path, or browser discovery when the path is empty. Windows uses the modern system file dialog with visual styles, per-monitor DPI awareness, and foreground activation, showing all files by default. Cancelling preserves the current value; selecting a file updates the draft until Save is clicked.
+
 ## Lifecycle
 
 1. The plugin injects `browserUse` and `tools`.

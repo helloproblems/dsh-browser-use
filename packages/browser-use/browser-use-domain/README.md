@@ -68,6 +68,8 @@ mcp__<backend.browserType>__<backend-tool-name>
 - 可编辑的浏览器可执行文件位置与本机文件选择器。
 - 通过 DSH settings remote API 完成的 revision 感知替换。
 
+文件选择器优先从当前填写的路径打开；路径为空时使用自动检索结果。Windows 使用启用视觉样式的现代系统文件对话框，支持每显示器 DPI 和前台激活，默认显示所有文件。取消选择保留原值，选中后点击“保存”应用设置。
+
 ## 生命周期
 
 1. 插件注入 `browserUse` 与 `tools`。

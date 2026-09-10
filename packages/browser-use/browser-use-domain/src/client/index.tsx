@@ -111,13 +111,17 @@ function Section({ remote }: { remote: any }) {
     setPicking(true)
     setError('')
     try {
-      const response = await fetch(`${PICKER_ENDPOINT}?browserType=${encodeURIComponent(draft.browserType)}`, {
+      const query = new URLSearchParams({ browserType: draft.browserType, initialPath: draft.browserPath.trim() })
+      const response = await fetch(`${PICKER_ENDPOINT}?${query}`, {
         method: 'POST',
         headers: { [PICKER_HEADER]: '1' },
       })
       const answer = await response.json() as { path?: unknown; error?: unknown }
       if (!response.ok) throw new Error(typeof answer.error === 'string' ? answer.error : '浏览器文件选择失败')
-      if (typeof answer.path === 'string') setDraft({ ...draft, browserPath: answer.path })
+      if (typeof answer.path === 'string') {
+        const browserPath = answer.path
+        setDraft(current => current ? { ...current, browserPath } : current)
+      }
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : String(cause))
     } finally {

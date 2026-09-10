@@ -6,6 +6,7 @@ import { platform } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { discoverBrowserExecutable, type BrowserType } from 'browser-use'
+import { WINDOWS_PICKER_SCRIPT } from './windows-picker-script.js'
 
 export const BROWSER_PICKER_ENDPOINT = '/browser-use/pick-browser-executable'
 export const BROWSER_PICKER_HEADER = 'x-dsh-browser-use-picker'
@@ -72,26 +73,11 @@ function outputPath(result: CommandResult): string | null {
 }
 
 async function pickOnWindows(initialPath: string | undefined, signal: AbortSignal, run: CommandRunner): Promise<string | null> {
-  const script = [
-    '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8',
-    "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class BrowserPickerDpi { [DllImport(\"user32.dll\")] public static extern bool SetProcessDPIAware(); }'",
-    '[BrowserPickerDpi]::SetProcessDPIAware() | Out-Null',
-    'Add-Type -AssemblyName System.Windows.Forms',
-    '$dialog = New-Object System.Windows.Forms.OpenFileDialog',
-    "$dialog.Title = 'Select browser executable'",
-    "$dialog.Filter = 'Browser executables (*.exe)|*.exe|All files (*.*)|*.*'",
-    '$dialog.CheckFileExists = $true',
-    '$dialog.Multiselect = $false',
-    '$initial = $env:DSH_BROWSER_PICKER_INITIAL',
-    "if ($initial -and (Test-Path -LiteralPath $initial -PathType Leaf)) { $dialog.InitialDirectory = [System.IO.Path]::GetDirectoryName($initial); $dialog.FileName = [System.IO.Path]::GetFileName($initial) }",
-    "if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Out.Write($dialog.FileName) }",
-    '$dialog.Dispose()',
-  ].join('; ')
   const env = { ...process.env, DSH_BROWSER_PICKER_INITIAL: initialPath ?? '' }
   let missing: unknown
   for (const command of ['powershell.exe', 'pwsh.exe', 'pwsh']) {
     try {
-      return outputPath(await run(command, ['-NoProfile', '-NonInteractive', '-STA', '-Command', script], signal, env))
+      return outputPath(await run(command, ['-NoProfile', '-NonInteractive', '-STA', '-Command', WINDOWS_PICKER_SCRIPT], signal, env))
     } catch (error: unknown) {
       if (!commandMissing(error)) throw error
       missing = error
@@ -194,12 +180,17 @@ function pickerHandler(request: IncomingMessage, response: ServerResponse): Prom
   }
   const url = new URL(request.url ?? BROWSER_PICKER_ENDPOINT, 'http://localhost')
   const browserType: BrowserType = url.searchParams.get('browserType') === 'edge' ? 'edge' : 'chrome'
+  const initialPath = url.searchParams.get('initialPath')?.trim() || undefined
+  if (initialPath && !isAbsolute(initialPath)) {
+    respondJson(response, 400, { error: 'browser picker initial path must be absolute' })
+    return
+  }
   const controller = new AbortController()
   const abort = (): void => { controller.abort() }
   const close = (): void => { if (!response.writableEnded) controller.abort() }
   request.once('aborted', abort)
   response.once('close', close)
-  return pickBrowserExecutable(browserType, controller.signal).then(
+  return pickBrowserExecutable(browserType, controller.signal, { initialPath }).then(
     path => { if (!response.destroyed) respondJson(response, 200, { path }) },
     (error: unknown) => {
       if (response.destroyed) return

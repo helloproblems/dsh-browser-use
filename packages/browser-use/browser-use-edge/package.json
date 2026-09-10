@@ -1,6 +1,6 @@
 {
   "name": "browser-use-edge",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Reserved future Edge backend for browser-use",
   "type": "module",
   "main": "lib/index.js",
