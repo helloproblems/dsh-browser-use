@@ -1,21 +1,21 @@
 ---
-description: "Chrome backend reference for executable discovery, browser ownership, per-Agent contexts, and chrome-devtools-mcp tool execution."
+description: "Chrome 后端参考，涵盖可执行文件发现、浏览器所有权、Agent 隔离上下文与 chrome-devtools-mcp 工具执行。"
 kind: "package-reference"
 ---
 
 # browser-use-chrome
 
-English | [中文](README.zh.md)
+[English](README.md) | 中文
 
-## Summary
+## 概述
 
-`browser-use-chrome` is the working backend for the browser-use family. It registers backend `chrome`, publishes lifecycle service `browserUse.backend.chrome`, builds a tool catalog from `chrome-devtools-mcp@1.8.0`, and executes those tools through one process-shared browser with one `McpContext` per opaque owner. It launches the configured browser executable, or lets Puppeteer resolve the system Chrome channel when no path is available.
+`browser-use-chrome` 是 browser-use 家族当前可工作的后端。它注册后端 `chrome`，发布生命周期服务 `browserUse.backend.chrome`，从 `chrome-devtools-mcp@1.8.0` 构建工具目录，并通过一个进程共享浏览器和每个不透明 owner 一个 `McpContext` 来执行工具。它会启动配置的浏览器可执行文件；未提供路径时，则由 Puppeteer 解析系统 Chrome 稳定版。
 
-The package owns browser resources only. `browser-use-domain` owns DSH tool registration, tool timeout, settings, and Agent lifecycle.
+本包只拥有浏览器资源。`browser-use-domain` 拥有 DSH 工具注册、工具超时、设置和 Agent 生命周期。
 
-## Use this package
+## 使用本包
 
-Mount it between the Hub and Domain in a composition:
+在组合中把它挂载于 Hub 与 Domain 之间：
 
 ```yaml
 - name: browser-use
@@ -29,99 +29,99 @@ Mount it between the Hub and Domain in a composition:
     toolCallTimeoutMs: 120000
 ```
 
-When `browserPath` is empty, the Domain detects the selected browser executable and persists it to DSH settings. If no executable is found, the backend still asks `chrome-devtools-mcp` to resolve and launch the stable Chrome channel.
+`browserPath` 为空时，Domain 会检索所选浏览器的可执行文件并持久化到 DSH 设置。仍未找到可执行文件时，后端会请求 `chrome-devtools-mcp` 解析并启动 Chrome 稳定版。
 
-## Configuration ownership
+## 配置所有权
 
-Browser connection fields are defined by `browser-use-domain` and forwarded through `BrowserUseSettings`:
+浏览器连接字段由 `browser-use-domain` 定义，再通过 `BrowserUseSettings` 转发：
 
-| Domain field | Effect in this backend |
+| Domain 字段 | 在本后端中的作用 |
 |---|---|
-| `headless` | Passed to the browser launch operation |
-| `browserPath` | Passed to Puppeteer as `executablePath` when non-empty |
-| `browserType` | Chrome is active; Edge is represented but disabled in the settings UI |
+| `headless` | 传给浏览器启动操作 |
+| `browserPath` | 非空时作为 Puppeteer 的 `executablePath` |
+| `browserType` | 当前启用 Chrome；Edge 已预留但在设置页中禁用 |
 
-The backend package schema also accepts `toolCallTimeoutMs` with default `120000`. This field is currently retained for composition compatibility but is not read by `ChromeBrowserUseBackend`; the effective registered tool timeout is `browser-use-domain.config.toolCallTimeoutMs`.
+后端包 schema 也接受默认值为 `120000` 的 `toolCallTimeoutMs`。该字段目前为组合兼容性保留，但 `ChromeBrowserUseBackend` 不读取它；真正生效的工具超时是 `browser-use-domain.config.toolCallTimeoutMs`。
 
-## Browser selection
+## 浏览器选择
 
-When opening the shared browser, the backend follows these rules:
+打开共享浏览器时，后端遵循以下规则：
 
-| Settings | Behavior |
+| 设置 | 行为 |
 |---|---|
-| Non-empty `browserPath` | Launch that executable directly |
-| Empty `browserPath` | Launch Puppeteer's stable Chrome channel |
+| `browserPath` 非空 | 直接启动该可执行文件 |
+| `browserPath` 为空 | 启动 Puppeteer 解析到的 Chrome 稳定版 |
 
-### Discovery order
+### 发现顺序
 
-`discoverBrowserExecutable()` checks platform installation candidates in order and returns the first executable path:
+`discoverBrowserExecutable()` 按顺序检查平台安装候选，并返回第一个可执行路径：
 
-1. Windows per-user and Program Files Chrome/Edge locations.
-2. macOS system and per-user application bundles.
-3. Linux standard binary directories followed by entries from `PATH`.
+1. Windows 用户目录与 Program Files 中的 Chrome/Edge 路径。
+2. macOS 系统与用户级应用程序包。
+3. Linux 标准二进制目录，再检查 `PATH` 中的目录。
 
-The Domain runs discovery before registering the settings namespace and persists a detected path when the user layer does not already contain one.
+Domain 会在注册设置命名空间前执行发现；用户设置层尚未保存路径时，会把发现结果持久化。
 
-## Resource lifecycle
+## 资源生命周期
 
-- **Shared browser:** `browserPromise` ensures concurrent first calls share one launch operation.
-- **Owner isolation:** the backend maps each owner object to one pending or ready `McpContext`.
-- **Workspace root:** when the owner carries `session.header.cwd`, that directory is exposed to the context as root `workspace` through a file URL.
-- **Initial page:** every new owner context opens a page named `browser-use-<owner-id>`.
-- **Release:** `release(owner)` removes the owner entry and disposes its context without closing other owners.
-- **Reconfigure:** replaces the settings supplier, disposes all owner contexts, clears the connection promise, and calls upstream `closeBrowser()`.
-- **Close:** marks the backend disposed and performs the same complete reset; repeated close calls are harmless.
+- **共享浏览器：** `browserPromise` 保证并发首次调用复用同一次启动过程。
+- **Owner 隔离：** 后端把每个 owner 对象映射到一个待完成或已就绪的 `McpContext`。
+- **Workspace root：** owner 带有 `session.header.cwd` 时，该目录通过文件 URL 作为根 `workspace` 暴露给上下文。
+- **初始页面：** 每个新 owner 上下文打开名为 `browser-use-<owner-id>` 的页面。
+- **Release：** `release(owner)` 删除 owner 项并销毁其上下文，不关闭其他 owner。
+- **重新配置：** 替换设置提供函数，销毁全部 owner 上下文，清除连接 promise，并调用上游 `closeBrowser()`。
+- **关闭：** 标记后端已销毁并执行同样的完整 reset；重复 close 无害。
 
-A failed owner-context creation removes its cached promise so a later tool call can retry.
+Owner 上下文创建失败时，其缓存 promise 会被移除，后续工具调用可以重试。
 
-## Tool catalog and execution
+## 工具目录与执行
 
-The constructor obtains the upstream tool list through `createTools()`, keeps only handlers whose `shouldRegister` flag is true, and converts each registered Zod input schema to JSON Schema. The catalog is stable for the backend instance and is consumed once by the Domain.
+构造函数通过 `createTools()` 获取上游工具列表，只保留 `shouldRegister` 为 true 的 handler，并把每个已注册 Zod 输入 schema 转换为 JSON Schema。目录在后端实例生命周期内保持稳定，由 Domain 读取一次。
 
-Execution reuses one `ToolHandler` per owner and tool. The upstream result's `content` array and optional `structuredContent` are returned unchanged at the shared contract boundary. An upstream `isError` result becomes a rejected `Error`, using textual content when available.
+执行时，每个 owner、每个工具复用一个 `ToolHandler`。上游结果的 `content` 数组与可选 `structuredContent` 会原样返回到共享契约边界。上游 `isError` 结果会转换为 rejected `Error`，优先使用其中的文本内容。
 
-Important upstream options disable usage statistics and experimental categories, disallow unrestricted paths, isolate page handling, and redact network headers before exposure.
+重要上游选项会关闭使用统计与实验分类，禁止无限制路径，隔离页面处理，并在暴露网络数据前脱敏请求头。
 
-## Schema conversion
+## Schema 转换
 
-[`src/json-schema.ts`](src/json-schema.ts) supports the Zod shapes currently used by `chrome-devtools-mcp`: strings, numbers, booleans, literals, enums, arrays, optional/default/effect wrappers, unions, records, and objects. Unknown shapes fall back to `{}`, and object schemas allow additional properties.
+[`src/json-schema.ts`](src/json-schema.ts) 支持 `chrome-devtools-mcp` 当前使用的 Zod 形状：字符串、数字、布尔、字面量、枚举、数组、optional/default/effect 包装、联合、record 与 object。未知形状退化为 `{}`，object schema 允许额外字段。
 
-## Failures and recovery
+## 失败与恢复
 
-- **Disposed backend:** further execution rejects; reactivate the backend plugin rather than reusing the closed instance.
-- **Unknown tool name:** execution rejects before creating an owner context; the Domain should only publish names from `tools()`.
-- **Launch failure:** the shared browser promise clears after rejection, so a later call retries the launch.
-- **Tool failure:** upstream `isError` content becomes a normal rejected tool call.
-- **Missing detected executable:** discovery continues through the remaining platform candidates; an empty result falls back to Puppeteer's stable channel.
+- **后端已销毁：** 后续执行拒绝；应重新激活后端插件，而不是复用已关闭实例。
+- **未知工具名：** 在创建 owner 上下文之前拒绝；Domain 应只发布 `tools()` 返回的名称。
+- **启动失败：** 共享浏览器 promise 在 rejection 后清空，后续调用会重新启动。
+- **工具失败：** 上游 `isError` 内容转换为标准 rejected 工具调用。
+- **未找到可执行文件：** 发现会继续检查剩余平台候选；最终为空时回退到 Puppeteer 的稳定版通道。
 
-## Implementation map
+## 实现地图
 
-| File | Responsibility |
+| 文件 | 职责 |
 |---|---|
-| [`src/index.ts`](src/index.ts) | Backend registration, browser ownership, owner contexts, catalog, and execution |
-| [`src/discovery.ts`](src/discovery.ts) | Re-export of shared browser executable discovery |
-| [`src/json-schema.ts`](src/json-schema.ts) | Minimal Zod-to-JSON-Schema projection for upstream tool inputs |
-| [`src/config.ts`](src/config.ts) | Backend plugin configuration schema |
-| [`src/chrome-types.d.ts`](src/chrome-types.d.ts) | Local declarations for pinned upstream internal modules |
-| [`tests/discovery.spec.ts`](tests/discovery.spec.ts) | Chrome/Edge executable candidate and fallback behavior |
-| [`tests/json-schema.spec.ts`](tests/json-schema.spec.ts) | Projection of a real upstream Chrome tool schema |
+| [`src/index.ts`](src/index.ts) | 后端注册、浏览器所有权、owner 上下文、工具目录与执行 |
+| [`src/discovery.ts`](src/discovery.ts) | 共享浏览器可执行文件发现的重新导出 |
+| [`src/json-schema.ts`](src/json-schema.ts) | 面向上游工具输入的最小 Zod 到 JSON Schema 投影 |
+| [`src/config.ts`](src/config.ts) | 后端插件配置 schema |
+| [`src/chrome-types.d.ts`](src/chrome-types.d.ts) | 固定版本上游内部模块的本地声明 |
+| [`tests/discovery.spec.ts`](tests/discovery.spec.ts) | Chrome/Edge 可执行文件候选与回退行为 |
+| [`tests/json-schema.spec.ts`](tests/json-schema.spec.ts) | 真实上游 Chrome 工具 schema 的投影 |
 
-## Model experience
+## 模型体验
 
-This backend supplies the tool names, descriptions, schemas, and results that the Domain exposes to the model. It injects no prompt by itself. Network headers are configured for redaction, and unrestricted filesystem paths are disabled in the upstream MCP context.
+本后端提供由 Domain 暴露给模型的工具名、描述、schema 和结果，自身不注入提示词。上游 MCP 上下文配置会脱敏网络请求头，并禁止无限制文件系统路径。
 
-## Known limitations
+## 已知限制
 
-- The implementation imports `chrome-devtools-mcp` internal `build/src` modules and is pinned to version `1.8.0`; upstream internal changes can break it.
-- The settings UI keeps Edge disabled until a complete Edge backend is available, although executable discovery already knows common Edge locations.
-- The upstream browser helper is process-global. Reconfiguration or closure calls `closeBrowser()` for that shared helper.
-- All owners share one browser connection and one backend mutex, so some operations may serialize.
-- Schema conversion is intentionally partial; unsupported Zod nodes degrade to an unconstrained schema.
-- Tests use mocks and schema projection. They do not launch a browser or validate a live DevTools session.
+- 实现导入 `chrome-devtools-mcp` 的内部 `build/src` 模块，并固定在版本 `1.8.0`；上游内部变化可能造成破坏。
+- 可执行文件发现已覆盖常见 Edge 路径，但在完整 Edge 后端可用前，设置页仍禁用 Edge。
+- 上游浏览器 helper 是进程全局单例；重新配置或关闭会对该共享 helper 调用 `closeBrowser()`。
+- 所有 owner 共用一个浏览器连接和一个后端 mutex，因此部分操作可能串行化。
+- Schema 转换有意只支持部分 Zod 节点；不支持的节点会退化为无约束 schema。
+- 测试使用 mock 和 schema 投影，不启动浏览器，也不验证真实 DevTools 会话。
 
-## Related documentation
+## 相关文档
 
-- [Package group map](../README.md)
-- [Hub reference](../browser-use/README.md)
-- [Domain reference](../browser-use-domain/README.md)
-- [Repository guide](../../../README.md)
+- [包组地图](../README.zh.md)
+- [Hub 参考](../browser-use/README.zh.md)
+- [Domain 参考](../browser-use-domain/README.zh.md)
+- [仓库指南](../../../README.zh.md)

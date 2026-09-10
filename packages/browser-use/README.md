@@ -1,53 +1,53 @@
 ---
-description: "Package-group map for the browser-use Hub, Domain, and replaceable browser backends."
+description: "browser-use Hub、Domain 与可替换浏览器后端的包组地图。"
 kind: "package-group"
 ---
 
 # packages/browser-use
 
-English | [中文](README.zh.md)
+[English](README.md) | 中文
 
-## Summary
+## 概述
 
-The browser-use package group gives a DSH composition model-callable browser automation without coupling tool registration to one browser implementation. The Hub owns shared contracts and registration, the Domain owns DSH-facing semantics and settings, and each backend owns its browser connection and owner-scoped contexts. Mount the group when Agents need to inspect or operate a browser; omit it when a composition needs no browser tools.
+browser-use 包组为 DSH 组合提供模型可调用的浏览器自动化能力，同时避免把工具注册绑定到某一个浏览器实现。Hub 拥有共享契约与注册，Domain 拥有面向 DSH 的语义和设置，各后端拥有浏览器连接与 owner 隔离上下文。当 Agent 需要检查或操作浏览器时挂载本组；不需要浏览器工具的组合可以省略整个组。
 
-## Packages
+## 包
 
-| Package | Layer | Runtime contribution |
+| 包 | 分层 | 运行时贡献 |
 |---|---|---|
-| [`browser-use`](browser-use/README.md) | Hub | Provides `ctx.browserUse`, backend contracts, and the named registry |
-| [`browser-use-domain`](browser-use-domain/README.md) | Domain | Publishes `mcp__<browser>__*` tools and the browser automation settings section |
-| [`browser-use-chrome`](browser-use-chrome/README.md) | Backend | Registers backend `chrome` and lifecycle service `browserUse.backend.chrome` |
-| [`browser-use-dege`](browser-use-dege/README.md) | Backend placeholder | Registers backend `dege`; disabled in the shipped bundle and exposes no tools |
+| [`browser-use`](browser-use/README.zh.md) | Hub | 提供 `ctx.browserUse`、后端契约和具名注册表 |
+| [`browser-use-domain`](browser-use-domain/README.zh.md) | Domain | 发布 `mcp__<browser>__*` 工具和“浏览器自动化”设置区 |
+| [`browser-use-chrome`](browser-use-chrome/README.zh.md) | Backend | 注册后端 `chrome` 和生命周期服务 `browserUse.backend.chrome` |
+| [`browser-use-dege`](browser-use-dege/README.zh.md) | Backend 占位 | 注册后端 `dege`；在内置 bundle 中禁用且不暴露工具 |
 
-## Dependency direction
+## 依赖方向
 
 ```text
 browser-use-chrome ─┐
-browser-use-dege   ─┼─ register implementations ─> browser-use Hub
-browser-use-domain ─┘  resolve selected backend  ─> DSH tools/settings
+browser-use-dege   ─┼─ 注册实现 ─> browser-use Hub
+browser-use-domain ─┘  解析所选后端 ─> DSH 工具/设置
 ```
 
-All three leaf packages depend on the Hub contract. Backends do not depend on the Domain, and the Domain does not import a concrete backend. This keeps browser resource ownership replaceable while preserving one DSH-facing tool layer.
+三个叶子包都依赖 Hub 契约。后端不依赖 Domain，Domain 也不导入具体后端。这样既能替换浏览器资源实现，又能保持唯一的 DSH 工具语义层。
 
-## Layer ownership
+## 分层所有权
 
-- **Hub owns contracts and identity.** It defines `BrowserUseBackend`, the backend registry, Hub error codes, and lifecycle service-key derivation. It performs no browser IO and registers no model tools.
-- **Domain owns product semantics.** It chooses the configured backend, converts the backend catalog into DSH tool definitions, requires an initiating Agent, manages tool-call timeout, and forwards browser settings.
-- **Backend owns resources.** It opens or connects to a browser, creates owner-scoped runtime state, executes tools, and tears down resources on release, reconfiguration, or close.
-- **Bundle owns composition.** The repository root patch decides which Hub, Domain, and backend packages are enabled and supplies their initial configuration.
+- **Hub 拥有契约与身份。** 它定义 `BrowserUseBackend`、后端注册表、Hub 错误码和生命周期服务键推导；不执行浏览器 IO，也不注册模型工具。
+- **Domain 拥有产品语义。** 它选择配置指定的后端，把后端目录转换为 DSH 工具定义，要求调用来自 Agent，管理工具超时，并转发浏览器设置。
+- **Backend 拥有资源。** 它启动或连接浏览器、创建 owner 级运行时状态、执行工具，并在 release、重新配置或 close 时释放资源。
+- **Bundle 拥有组合。** 仓库根 patch 决定启用哪些 Hub、Domain 和后端包，并提供初始配置。
 
-## Activation flow
+## 激活流程
 
-1. The Hub mounts `ctx.browserUse`.
-2. An enabled backend injects the Hub, registers under its configured identity, and provides `browserUse.backend.<name>`.
-3. The Domain derives that lifecycle key from its `backend` field and waits for it through `ctx.inject`.
-4. Once active, the Domain resolves the same backend by name and registers its tool catalog.
-5. `agent/disposed` releases owner-scoped backend state; plugin disposal unregisters and closes the backend.
+1. Hub 挂载 `ctx.browserUse`。
+2. 已启用后端注入 Hub，以自身身份注册，并提供 `browserUse.backend.<name>`。
+3. Domain 根据 `backend` 字段推导该生命周期键，并通过 `ctx.inject` 等待它。
+4. 激活后，Domain 再按同一名称解析后端并注册其工具目录。
+5. `agent/disposed` 释放 owner 级后端状态；插件销毁时注销并关闭后端。
 
-This service-driven activation prevents registration races without making YAML row order load-bearing.
+这种服务驱动的激活方式可以避免注册竞态，而不让 YAML 行顺序承担加载语义。
 
-## Composition example
+## 组合示例
 
 ```yaml
 - name: browser-use
@@ -61,17 +61,17 @@ This service-driven activation prevents registration races without making YAML r
     toolCallTimeoutMs: 120000
 ```
 
-## Documentation map
+## 文档地图
 
-- [Repository guide](../../README.md) for installation, workspace commands, and the shipped bundle.
-- [Hub reference](browser-use/README.md) for the backend contract and registry errors.
-- [Domain reference](browser-use-domain/README.md) for tool naming, settings, and lifecycle behavior.
-- [Chrome backend reference](browser-use-chrome/README.md) for executable discovery and browser ownership.
-- [Dege placeholder reference](browser-use-dege/README.md) for its intentionally non-functional status.
+- [仓库指南](../../README.zh.md)：安装、workspace 命令和内置 bundle。
+- [Hub 参考](browser-use/README.zh.md)：后端契约与注册表错误。
+- [Domain 参考](browser-use-domain/README.zh.md)：工具命名、设置和生命周期行为。
+- [Chrome 后端参考](browser-use-chrome/README.zh.md)：可执行文件发现与浏览器资源所有权。
+- [Dege 占位参考](browser-use-dege/README.zh.md)：其有意保持不可用的状态。
 
-## Development
+## 开发
 
-Run validation from the repository root so path aliases, Host bundles, and the Domain client module are checked together:
+从仓库根目录运行验证，以便一起检查路径别名、Host bundle 与 Domain 客户端模块：
 
 ```powershell
 pnpm typecheck

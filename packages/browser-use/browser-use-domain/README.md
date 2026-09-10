@@ -1,21 +1,21 @@
 ---
-description: "browser-use Domain reference for backend selection, DSH tool publication, settings, and per-Agent lifecycle management."
+description: "browser-use Domain 参考，涵盖后端选择、DSH 工具发布、设置和 Agent 生命周期管理。"
 kind: "package-reference"
 ---
 
 # browser-use-domain
 
-English | [中文](README.zh.md)
+[English](README.md) | 中文
 
-## Summary
+## 概述
 
-`browser-use-domain` is the DSH-facing semantics layer of the browser-use family. It selects one registered backend, waits for that backend's lifecycle service, converts the backend's stable catalog into `ctx.tools` registrations, requires every execution to originate from an Agent, forwards browser settings, and releases owner-scoped resources when the Agent is disposed. Its client module adds the "Browser Automation" section to DSH settings.
+`browser-use-domain` 是 browser-use 家族面向 DSH 的语义层。它选择一个已注册后端，等待该后端的生命周期服务，把后端稳定目录转换为 `ctx.tools` 注册，要求每次执行都来自 Agent，转发浏览器设置，并在 Agent 销毁时释放 owner 级资源。其客户端模块会在 DSH 设置中增加“浏览器自动化”区域。
 
-The Domain owns tool names, tool timeout, settings, and Agent lifecycle. It does not connect to a browser or import a concrete backend.
+Domain 拥有工具名、工具超时、设置和 Agent 生命周期。它不连接浏览器，也不导入任何具体后端。
 
-## Use this package
+## 使用本包
 
-Mount it with the Hub and at least one working backend:
+把它与 Hub 以及至少一个可工作的后端一起挂载：
 
 ```yaml
 - name: browser-use
@@ -29,87 +29,87 @@ Mount it with the Hub and at least one working backend:
     toolCallTimeoutMs: 120000
 ```
 
-The `backend` field is a registry identity. The Domain derives `browserUse.backend.<backend>`, waits for that service, then resolves the implementation through `ctx.browserUse.backend.get(backend)`.
+`backend` 字段是注册表身份。Domain 推导 `browserUse.backend.<backend>`，等待该服务后，再通过 `ctx.browserUse.backend.get(backend)` 解析实现。
 
-## Configuration
+## 配置
 
-| Field | Default | Meaning |
+| 字段 | 默认值 | 含义 |
 |---|---|---|
-| `backend` | `chrome` | Registered backend selected for all browser tools |
-| `headless` | `false` | Hide a browser window only when the backend launches one |
-| `browserType` | `chrome` | Browser identity; Chrome is selectable and Edge is reserved but disabled in the GUI |
-| `browserPath` | empty | Absolute browser executable path; an empty value is auto-detected at startup |
-| `toolCallTimeoutMs` | `120000` | Timeout applied to every DSH tool definition published by this Domain |
+| `backend` | `chrome` | 所有浏览器工具使用的已注册后端 |
+| `headless` | `false` | 仅在后端自行启动浏览器时隐藏窗口 |
+| `browserType` | `chrome` | 浏览器标识；GUI 可选择 Chrome，Edge 作为预留项保持禁用 |
+| `browserPath` | 空 | 浏览器可执行文件绝对路径；为空时启动阶段自动检索 |
+| `toolCallTimeoutMs` | `120000` | 应用于本 Domain 发布的每个 DSH 工具定义的超时 |
 
-`backend` and `toolCallTimeoutMs` are composition settings. The settings namespace exposed to the DSH GUI contains `headless`, `browserType`, and `browserPath`.
+`backend` 与 `toolCallTimeoutMs` 属于组合配置。暴露给 DSH GUI 的设置命名空间包含 `headless`、`browserType` 和 `browserPath`。
 
-## Tool publication
+## 工具发布
 
-For each item returned by `backend.tools()`, the Domain registers one DSH tool:
+对于 `backend.tools()` 返回的每一项，Domain 注册一个 DSH 工具：
 
 ```text
 mcp__<backend.browserType>__<backend-tool-name>
 ```
 
-For the Chrome backend, examples include `mcp__chrome__click` and `mcp__chrome__take_snapshot`.
+使用 Chrome 后端时，示例包括 `mcp__chrome__click` 和 `mcp__chrome__take_snapshot`。
 
-Each definition preserves the backend description and JSON Schema, applies `toolCallTimeoutMs`, and forwards an object input to `backend.execute()`. The initiating `Agent` object becomes the opaque owner. Calls without an Agent fail with `browser-use tools require an initiating DSH session`.
+每个定义保留后端描述和 JSON Schema，应用 `toolCallTimeoutMs`，并把对象输入转发给 `backend.execute()`。发起调用的 `Agent` 对象成为不透明 owner。没有 Agent 的调用会以 `browser-use tools require an initiating DSH session` 失败。
 
-Backend output keeps the MCP-style `content` array and optional `structuredContent`. The DSH renderer extracts text blocks from `content`; when no text block exists, it renders `(no textual output)` while retaining the structured result as the tool value.
+后端输出保留 MCP 风格的 `content` 数组和可选 `structuredContent`。DSH renderer 从 `content` 中提取文本块；没有文本块时显示 `(no textual output)`，同时仍把结构化结果保留为工具值。
 
-## Settings behavior
+## 设置行为
 
-The Host registers settings namespace `browser-use` when `ctx.settings` is available. When no browser path is configured, it detects the selected browser's executable, uses that path as the resolved base, and persists it into the user settings layer. Changes are watched and forwarded to `backend.reconfigure(next)`. Initial configuration and later reconfiguration failures are logged as warnings; they do not remove the already registered tool catalog.
+当 `ctx.settings` 可用时，Host 注册设置命名空间 `browser-use`。未配置浏览器位置时，它会检索所选浏览器的可执行文件，把结果作为解析后的 base，并写入用户设置层。变更由 watcher 转发到 `backend.reconfigure(next)`。初始配置或后续重新配置失败只记录 warning，不会移除已经注册的工具目录。
 
-The client module registers a settings section with:
+客户端模块注册的设置区域包含：
 
-- A Chrome/Edge dropdown whose Edge option is disabled until its backend is available.
-- A headless-mode switch.
-- An editable browser executable path with a native file chooser.
-- Revision-aware replacement through the DSH settings remote API.
+- Chrome/Edge 下拉列表；Edge 后端可用前该选项保持禁用。
+- 无头模式开关。
+- 可编辑的浏览器可执行文件位置与本机文件选择器。
+- 通过 DSH settings remote API 完成的 revision 感知替换。
 
-## Lifecycle
+## 生命周期
 
-1. The plugin injects `browserUse` and `tools`.
-2. It dynamically injects the selected backend lifecycle service.
-3. After that service is available, it resolves the backend and sends the initial settings snapshot.
-4. It registers the backend's tool catalog once for that activation.
-5. A global `agent/disposed` listener calls `backend.release(agent)`.
-6. Backend package disposal remains responsible for unregistering and closing the complete backend.
+1. 插件注入 `browserUse` 与 `tools`。
+2. 它动态注入所选后端的生命周期服务。
+3. 服务可用后，解析后端并发送初始设置快照。
+4. 在本次激活中注册一次后端工具目录。
+5. 全局 `agent/disposed` 监听器调用 `backend.release(agent)`。
+6. 后端包销毁时仍负责注销并关闭完整后端。
 
-## Failures and recovery
+## 失败与恢复
 
-- **Unknown backend:** the Domain remains waiting if the lifecycle service is absent; ensure the corresponding backend package is mounted and publishes the same identity.
-- **Registry mismatch:** if a lifecycle service exists but no registry entry exists, Hub lookup throws `BrowserUseError` with `backend-not-found`; fix the provider lifecycle pattern.
-- **No initiating Agent:** tool execution rejects; browser tools are intended for DSH Agent calls, not ownerless direct execution.
-- **Backend reconfiguration error:** the Domain logs a warning; inspect the selected backend's connection settings and logs.
-- **Tool execution error:** the backend rejection is returned through the normal DSH tool failure path.
+- **未知后端：** 生命周期服务缺失时 Domain 会保持等待；确认对应后端包已挂载并发布相同身份。
+- **注册表不一致：** 生命周期服务存在但注册项缺失时，Hub 查找抛出代码为 `backend-not-found` 的 `BrowserUseError`；修复提供方生命周期模式。
+- **没有发起 Agent：** 工具执行拒绝；浏览器工具面向 DSH Agent 调用，而非无 owner 的直接执行。
+- **后端重新配置错误：** Domain 记录 warning；检查所选后端的连接设置与日志。
+- **工具执行错误：** 后端 rejection 通过标准 DSH 工具失败路径返回。
 
-## Implementation map
+## 实现地图
 
-| File | Responsibility |
+| 文件 | 职责 |
 |---|---|
-| [`src/index.ts`](src/index.ts) | Backend activation, tool definitions, output rendering, settings forwarding, and Agent disposal |
-| [`src/config.ts`](src/config.ts) | Composition schema, defaults, and the `browser-use` settings namespace |
-| [`src/browser-picker.ts`](src/browser-picker.ts) | Same-origin native executable chooser endpoint |
-| [`src/client/index.tsx`](src/client/index.tsx) | DSH settings UI and remote settings writes |
+| [`src/index.ts`](src/index.ts) | 后端激活、工具定义、输出渲染、设置转发和 Agent 销毁处理 |
+| [`src/config.ts`](src/config.ts) | 组合 schema、默认值和 `browser-use` 设置命名空间 |
+| [`src/browser-picker.ts`](src/browser-picker.ts) | 同源保护的本机浏览器文件选择端点 |
+| [`src/client/index.tsx`](src/client/index.tsx) | DSH 设置 UI 与远程设置写入 |
 
-## Model experience
+## 模型体验
 
-This is the only package in the family that directly changes model capabilities. It registers one tool definition per backend catalog entry, so tool names, descriptions, and input schemas enter the model-facing tool list. It injects no system-prompt text and appends no session events of its own.
+这是本家族唯一直接改变模型能力的包。它为后端目录中的每一项注册工具定义，因此工具名、描述和输入 schema 会进入面向模型的工具列表。它不注入系统提示词，也不自行追加会话事件。
 
-## Known limitations
+## 已知限制
 
-- Backend selection is composition-time configuration and is not exposed as a live GUI setting.
-- Edge is represented in `browserType` but remains disabled in the GUI until a working Edge backend ships.
-- The backend tool catalog is captured once per activation; settings changes do not add or remove tools.
-- Reconfiguration failures are warnings rather than an unhealthy plugin state, so tools may stay registered while the backend cannot connect.
-- The text renderer ignores non-text content blocks; callers still receive the original structured tool value.
-- The settings client currently contains Chinese interface labels only.
+- 后端选择属于组合期配置，不作为实时 GUI 设置暴露。
+- `browserType` 已包含 Edge，但在可工作的 Edge 后端发布前，GUI 中该选项保持禁用。
+- 后端工具目录在每次激活时只读取一次；设置变更不会增加或删除工具。
+- 重新配置失败只是 warning，而不是插件不健康状态，因此后端无法连接时工具仍可能保持注册。
+- 文本 renderer 忽略非文本内容块；调用方仍会收到原始结构化工具值。
+- 设置客户端当前只包含中文界面文案。
 
-## Related documentation
+## 相关文档
 
-- [Package group map](../README.md)
-- [Hub reference](../browser-use/README.md)
-- [Chrome backend reference](../browser-use-chrome/README.md)
-- [Repository guide](../../../README.md)
+- [包组地图](../README.zh.md)
+- [Hub 参考](../browser-use/README.zh.md)
+- [Chrome 后端参考](../browser-use-chrome/README.zh.md)
+- [仓库指南](../../../README.zh.md)

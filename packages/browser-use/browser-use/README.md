@@ -1,19 +1,19 @@
 ---
-description: "browser-use Hub reference for compositions and backend implementers using ctx.browserUse and the named backend registry."
+description: "面向组合方与后端实现者的 browser-use Hub 参考，涵盖 ctx.browserUse 与具名后端注册表。"
 kind: "package-reference"
 ---
 
 # browser-use
 
-English | [中文](README.zh.md)
+[English](README.md) | 中文
 
-## Summary
+## 概述
 
-`browser-use` is the browser automation Hub. It mounts `ctx.browserUse`, defines the backend-facing TypeScript contract, keeps a named backend registry, derives lifecycle-only Cordis service keys, and exposes stable Hub error codes. It owns no browser process, page, model tool, settings document, or Agent state; concrete backends and the Domain layer own those responsibilities.
+`browser-use` 是浏览器自动化 Hub。它挂载 `ctx.browserUse`，定义面向后端的 TypeScript 契约，维护具名后端注册表，推导仅用于生命周期同步的 Cordis 服务键，并暴露稳定的 Hub 错误码。它不拥有浏览器进程、页面、模型工具、设置文档或 Agent 状态；这些职责分别属于具体后端与 Domain 层。
 
-## Use this package
+## 使用本包
 
-Mount the Hub before any browser-use backend or Domain package:
+在任何 browser-use 后端或 Domain 包之前挂载 Hub：
 
 ```yaml
 - name: browser-use
@@ -23,23 +23,23 @@ Mount the Hub before any browser-use backend or Domain package:
     backend: chrome
 ```
 
-The Hub alone has no model-visible behavior. A backend registers an implementation, and the Domain turns that implementation's catalog into DSH tools.
+单独挂载 Hub 不会产生模型可见行为。后端负责注册实现，Domain 再把该实现的工具目录转换为 DSH 工具。
 
-## Public API
+## 公共 API
 
-| Export | Purpose |
+| 导出 | 用途 |
 |---|---|
-| `BrowserUse` | Cordis `Service` mounted as `ctx.browserUse` |
-| `BackendRegistry` | Mutable name-to-`BrowserUseBackend` registry |
-| `BrowserUseBackendRegistry` | Deprecated compatibility alias of `BackendRegistry` |
-| `BrowserUseBackend` | Backend lifecycle and execution contract |
-| `BrowserUseSettings` | Settings snapshot forwarded by the Domain |
-| `BrowserUseTool` | Backend-local tool metadata and JSON Schema |
-| `BrowserUseResult` | JSON-safe MCP-style tool result |
-| `BrowserUseError` | Hub error with a stable `code` discriminant |
-| `browserUseBackendServiceKey(name)` | Returns `browserUse.backend.<name>` for activation synchronization |
+| `BrowserUse` | 挂载为 `ctx.browserUse` 的 Cordis `Service` |
+| `BackendRegistry` | 可变的名称到 `BrowserUseBackend` 注册表 |
+| `BrowserUseBackendRegistry` | `BackendRegistry` 的弃用兼容别名 |
+| `BrowserUseBackend` | 后端生命周期与执行契约 |
+| `BrowserUseSettings` | Domain 转发给后端的设置快照 |
+| `BrowserUseTool` | 后端本地工具元数据和 JSON Schema |
+| `BrowserUseResult` | JSON 安全的 MCP 风格工具结果 |
+| `BrowserUseError` | 带稳定 `code` 判别字段的 Hub 错误 |
+| `browserUseBackendServiceKey(name)` | 返回用于激活同步的 `browserUse.backend.<name>` |
 
-### Registry behavior
+### 注册表行为
 
 ```ts
 const unregister = ctx.browserUse.backend.register('custom', backend)
@@ -48,31 +48,31 @@ const names = ctx.browserUse.backend.names()
 unregister()
 ```
 
-`register()` returns a disposer that removes only its own registration. It deliberately does not close the backend; the provider plugin owns closure and should unregister before calling `backend.close()`. A stale disposer cannot remove a later registration that reused the same name.
+`register()` 返回只移除本次注册的 disposer。它有意不关闭后端；关闭责任属于提供方插件，后者应先注销，再调用 `backend.close()`。旧 disposer 不会误删后来复用同一名称的新注册。
 
-### Stable Hub errors
+### 稳定 Hub 错误
 
-| Code | Meaning | Recovery |
+| 代码 | 含义 | 恢复方式 |
 |---|---|---|
-| `duplicate-backend` | The name is already registered | Fix the composition so only one provider owns that name |
-| `backend-not-found` | No backend is registered under the requested name | Mount the provider and inject its lifecycle service before resolving it |
+| `duplicate-backend` | 该名称已经注册 | 修正组合，确保一个名称只有一个提供方 |
+| `backend-not-found` | 请求的名称没有对应后端 | 挂载提供方，并在解析前注入其生命周期服务 |
 
-Consumers may switch on `BrowserUseError.code`. Error messages are diagnostic text and are not a stable parsing surface.
+消费方可以根据 `BrowserUseError.code` 分支处理。错误消息只是诊断文本，不是稳定的解析接口。
 
-## Backend contract
+## 后端契约
 
-A backend implementation must provide:
+后端实现必须提供：
 
-- A stable `browserType` namespace used in published tool names.
-- A stable tool catalog from `tools()`; the Domain reads it once during activation.
-- `execute(owner, toolName, args)`, returning losslessly JSON-serializable output.
-- Idempotent `release(owner)` that removes only that owner's state.
-- `reconfigure(settings)`, which applies the latest settings snapshot and may recycle shared resources.
-- Idempotent asynchronous `close()`, resolving after all backend resources are released.
+- 稳定的 `browserType` 命名空间，用于生成公开工具名。
+- 由 `tools()` 返回的稳定工具目录；Domain 在激活时读取一次。
+- `execute(owner, toolName, args)`，返回可无损 JSON 序列化的结果。
+- 幂等的 `release(owner)`，只移除该 owner 的状态。
+- `reconfigure(settings)`，应用最新设置快照，并可按需重建共享资源。
+- 幂等异步 `close()`，在所有后端资源释放后 resolve。
 
-The `owner` object is opaque. Backends may use object identity as a key but must not serialize or retain unrelated Agent internals.
+`owner` 对象是不透明身份。后端可以用对象身份作为键，但不应序列化或保留无关的 Agent 内部数据。
 
-### Provider pattern
+### 提供方模式
 
 ```ts
 export const inject = ['browserUse']
@@ -90,32 +90,32 @@ export function apply(ctx: Context): void {
 }
 ```
 
-Publishing the lifecycle service lets the Domain wait for registration without treating the service value as the business API; runtime lookup still goes through the Hub registry.
+生命周期服务让 Domain 能等待注册完成，但该服务值不是业务 API；运行时查找仍通过 Hub 注册表完成。
 
-## Implementation map
+## 实现地图
 
-| File | Responsibility |
+| 文件 | 职责 |
 |---|---|
-| [`src/index.ts`](src/index.ts) | `BrowserUse` service, public exports, and lifecycle-key derivation |
-| [`src/backend.ts`](src/backend.ts) | Normative backend, settings, tool, and result contracts |
-| [`src/registry.ts`](src/registry.ts) | `BackendRegistry` and stale-disposer protection |
-| [`src/error.ts`](src/error.ts) | `BrowserUseError` and stable Hub error codes |
-| [`tests/registry.spec.ts`](tests/registry.spec.ts) | Registry, errors, compatibility alias, and Cordis mounting tests |
+| [`src/index.ts`](src/index.ts) | `BrowserUse` 服务、公共导出和生命周期键推导 |
+| [`src/backend.ts`](src/backend.ts) | 后端、设置、工具与结果的规范性契约 |
+| [`src/registry.ts`](src/registry.ts) | `BackendRegistry` 与旧 disposer 防护 |
+| [`src/error.ts`](src/error.ts) | `BrowserUseError` 和稳定 Hub 错误码 |
+| [`tests/registry.spec.ts`](tests/registry.spec.ts) | 注册表、错误、兼容别名与 Cordis 挂载测试 |
 
-## Model experience
+## 模型体验
 
-The Hub registers no tools and injects no prompts, so it contributes zero direct request tokens. Model-visible behavior starts only when `browser-use-domain` registers a backend's catalog.
+Hub 不注册工具，也不注入提示词，因此不会直接增加任何请求 token。只有 `browser-use-domain` 注册后端工具目录后，模型才会看到浏览器能力。
 
-## Known limitations
+## 已知限制
 
-- The Hub validates duplicate and missing registrations but does not validate backend names or compare a registry name with `backend.browserType`.
-- Tool catalogs are assumed stable for one Domain activation; dynamic catalog mutation is unsupported.
-- `BrowserUseSettings` supports Chrome and Edge identities, but the shipped settings surface keeps Edge disabled until a working backend is available.
-- Unregistering never closes a backend. Provider plugins must implement the lifecycle pattern above.
+- Hub 会检查重复和缺失注册，但不校验后端名称，也不比较注册名称与 `backend.browserType`。
+- 一个 Domain 激活周期内默认工具目录稳定；不支持动态修改目录。
+- `BrowserUseSettings` 已接受 Chrome 与 Edge 标识，但在可工作的 Edge 后端提供前，内置设置页仍禁用 Edge。
+- 注销永远不会自动关闭后端。提供方插件必须实现上面的生命周期模式。
 
-## Related documentation
+## 相关文档
 
-- [Package group map](../README.md)
-- [Domain reference](../browser-use-domain/README.md)
-- [Chrome backend reference](../browser-use-chrome/README.md)
-- [Repository guide](../../../README.md)
+- [包组地图](../README.zh.md)
+- [Domain 参考](../browser-use-domain/README.zh.md)
+- [Chrome 后端参考](../browser-use-chrome/README.zh.md)
+- [仓库指南](../../../README.zh.md)

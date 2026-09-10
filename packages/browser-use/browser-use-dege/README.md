@@ -1,36 +1,36 @@
 ---
-description: "Status and maintainer reference for the disabled browser-use-dege placeholder backend."
+description: "已禁用的 browser-use-dege 占位后端状态与维护者参考。"
 kind: "package-reference"
 ---
 
 # browser-use-dege
 
-English | [中文](README.zh.md)
+[English](README.md) | 中文
 
-## Summary
+## 概述
 
-`browser-use-dege` reserves a separate package and backend identity for a future Microsoft Edge implementation. It currently registers backend `dege` and lifecycle service `browserUse.backend.dege`, but exposes an empty tool catalog, allocates no browser resources, ignores settings, and rejects direct execution. The shipped `dsh-browser-use` bundle keeps it disabled.
+`browser-use-dege` 为未来 Microsoft Edge 实现预留独立 package 与后端身份。它目前会注册后端 `dege` 和生命周期服务 `browserUse.backend.dege`，但只暴露空工具目录，不分配浏览器资源，忽略设置，并拒绝直接执行。内置 `dsh-browser-use` bundle 保持该包禁用。
 
-The `dege` spelling is the current package and backend identity and is intentionally preserved for compatibility. This package must not be treated as a working Edge integration.
+`dege` 拼写是当前 package 与后端身份，为兼容性有意保留。本包不能被视为可工作的 Edge 集成。
 
-## Current behavior
+## 当前行为
 
-| Contract member | Current implementation |
+| 契约成员 | 当前实现 |
 |---|---|
 | `browserType` | `dege` |
-| `tools()` | Returns an empty array |
-| `execute()` | Rejects with a placeholder error |
-| `release()` | No-op |
-| `reconfigure()` | Resolved no-op |
-| `close()` | Resolved no-op |
-| Registry identity | `dege` |
-| Lifecycle service | `browserUse.backend.dege` |
+| `tools()` | 返回空数组 |
+| `execute()` | 以占位错误拒绝 |
+| `release()` | 空操作 |
+| `reconfigure()` | 已 resolve 的空操作 |
+| `close()` | 已 resolve 的空操作 |
+| 注册表身份 | `dege` |
+| 生命周期服务 | `browserUse.backend.dege` |
 
-If this backend is manually enabled and selected by `browser-use-domain`, the Domain activates successfully but registers no browser tools because the catalog is empty.
+如果手动启用本后端并让 `browser-use-domain` 选择它，Domain 可以激活，但由于目录为空，不会注册任何浏览器工具。
 
-## Bundle status
+## Bundle 状态
 
-The root patch declares the package but disables its row:
+根 patch 声明了本包，但禁用其行：
 
 ```yaml
 - id: browser-use-dege
@@ -38,43 +38,43 @@ The root patch declares the package but disables its row:
   disabled: true
 ```
 
-Keep it disabled in user compositions until it owns a real Edge connection, tool catalog, owner contexts, and cleanup behavior.
+在它真正拥有 Edge 连接、工具目录、owner 上下文和清理行为之前，用户组合也应保持禁用。
 
-## Intended implementation boundary
+## 预期实现边界
 
-A future implementation should stay within the existing backend contract:
+未来实现应保持在现有后端契约内：
 
-1. Build a stable Edge-compatible tool catalog.
-2. Connect to or launch Edge without adding browser IO to the Hub or Domain.
-3. Isolate runtime state by opaque owner object.
-4. Release one owner's state through `release(owner)`.
-5. Apply Domain settings through `reconfigure(settings)`.
-6. Unregister before closing all resources during plugin disposal.
+1. 构建稳定且兼容 Edge 的工具目录。
+2. 连接或启动 Edge，不把浏览器 IO 放进 Hub 或 Domain。
+3. 按不透明 owner 对象隔离运行时状态。
+4. 通过 `release(owner)` 释放单个 owner 的状态。
+5. 通过 `reconfigure(settings)` 应用 Domain 设置。
+6. 插件销毁时先注销，再关闭全部资源。
 
-If Edge requires settings that cannot be represented by the current Chrome-shaped `BrowserUseSettings`, evolve the shared Hub contract and Domain settings schema explicitly rather than adding hidden backend-only behavior.
+如果 Edge 需要当前 Chrome 形状 `BrowserUseSettings` 无法表达的设置，应显式演进共享 Hub 契约与 Domain 设置 schema，而不是增加隐藏的后端私有行为。
 
-## Implementation map
+## 实现地图
 
-| File | Responsibility |
+| 文件 | 职责 |
 |---|---|
-| [`src/index.ts`](src/index.ts) | Placeholder backend class, Hub registration, and lifecycle service publication |
+| [`src/index.ts`](src/index.ts) | 占位后端类、Hub 注册和生命周期服务发布 |
 
-## Model experience
+## 模型体验
 
-None in the shipped bundle because the package is disabled. Even when manually enabled and selected, its empty catalog causes the Domain to register no tools and inject no prompt text.
+内置 bundle 中本包禁用，因此没有模型体验。即使手动启用并选中，空目录也会使 Domain 不注册工具，并且不会注入任何提示词文本。
 
-## Known limitations
+## 已知限制
 
-- No Edge process is launched or connected.
-- No browser tools are available.
-- Direct execution always rejects.
-- Settings and owner lifecycle calls are no-ops.
-- There are no package-specific tests yet.
+- 不会启动或连接 Edge 进程。
+- 没有任何浏览器工具。
+- 直接执行始终拒绝。
+- 设置与 owner 生命周期调用都是空操作。
+- 当前没有本包专属测试。
 
-## Related documentation
+## 相关文档
 
-- [Package group map](../README.md)
-- [Hub backend contract](../browser-use/README.md)
-- [Domain reference](../browser-use-domain/README.md)
-- [Working Chrome backend](../browser-use-chrome/README.md)
-- [Repository guide](../../../README.md)
+- [包组地图](../README.zh.md)
+- [Hub 后端契约](../browser-use/README.zh.md)
+- [Domain 参考](../browser-use-domain/README.zh.md)
+- [可工作的 Chrome 后端](../browser-use-chrome/README.zh.md)
+- [仓库指南](../../../README.zh.md)
