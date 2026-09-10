@@ -1,5 +1,5 @@
 ---
-description: "Chrome 后端参考，涵盖可执行文件发现、浏览器所有权、Agent 隔离上下文与 chrome-devtools-mcp 工具执行。"
+description: "Chrome 后端参考：通过标准 MCP stdio 协议集成 chrome-devtools-mcp。"
 kind: "package-reference"
 ---
 
@@ -7,121 +7,65 @@ kind: "package-reference"
 
 [English](README.en.md) | 中文
 
-## 概述
+## 接入方式
 
-`browser-use-chrome` 是 browser-use 家族当前可工作的后端。它注册后端 `chrome`，发布生命周期服务 `browserUse.backend.chrome`，从 `chrome-devtools-mcp@1.8.0` 构建工具目录，并通过一个进程共享浏览器和每个不透明 owner 一个 `McpContext` 来执行工具。它会启动配置的浏览器可执行文件；未提供路径时，则由 Puppeteer 解析系统 Chrome 稳定版。
+本包使用官方 MCP SDK 的 `Client` 与 `StdioClientTransport`，启动已安装的 `chrome-devtools-mcp@1.8.0` 命令行服务。入口从依赖 package.json 的 `bin` 字段解析；运行时不下载包、不导入上游内部工具模块，也不开放监听端口。
 
-本包只拥有浏览器资源。`browser-use-domain` 拥有 DSH 工具注册、工具超时、设置和 Agent 生命周期。
+```text
+DSH Domain → MCP Client → stdin/stdout JSON-RPC → chrome-devtools-mcp → Chrome
+```
 
-## 使用本包
+初始化完成 MCP 握手，通过 `tools/list` 获取工具名称、描述和原始 JSON Schema，随后关闭用于发现目录的连接。此时不启动 Chrome。工具调用通过 `tools/call` 完成，保留 `content` 与 `structuredContent`，将 `isError` 转为工具执行错误。客户端版本号从本包 package.json 读取。
 
-在组合中把它挂载于 Hub 与 Domain 之间：
+Domain 继续发布 `mcp__chrome__*` 工具，包括 `new_page`、`click`、`take_snapshot` 等；不需要迁移到 Playwright 工具名称。输入 schema 直接来自服务器，已移除旧 Zod 转换器和内部模块类型声明。
+
+## 配置
+
+默认 bundle 选择 Chrome，同时启用 Edge 以支持设置页热切换。Chrome 单后端组合：
 
 ```yaml
 - name: browser-use
 - name: browser-use-chrome
+  config:
+    toolCallTimeoutMs: 120000
 - name: browser-use-domain
   config:
     backend: chrome
-    headless: false
     browserType: chrome
+    headless: false
     browserPath: ''
     toolCallTimeoutMs: 120000
 ```
 
-`browserPath` 为空时，Domain 会检索所选浏览器的可执行文件并持久化到 DSH 设置。仍未找到可执行文件时，后端会请求 `chrome-devtools-mcp` 解析并启动 Chrome 稳定版。
+- `browserPath` 非空时传入 `--executable-path`；空路径由 Domain 自动发现，或回退到上游 `--channel stable`。
+- `headless` 控制浏览器是否显示窗口。
+- 后端 `toolCallTimeoutMs` 控制 MCP 请求超时，默认 120 秒；Domain 的同名配置控制 DSH 工具超时，两处可保持一致。
+- MCP 连接握手超时为 30 秒。
 
-## 配置所有权
+## 会话与清理
 
-浏览器连接字段由 `browser-use-domain` 定义，再通过 `BrowserUseSettings` 转发：
+每个 Agent 首次调用时创建独立 MCP 服务进程；服务使用 `--isolated` 启动带临时用户目录的 Chrome。同一 Agent 复用连接，不同 Agent 不共享浏览器配置。与旧实现相比，这提高了进程隔离程度，也增加了多 Agent 的资源开销。
 
-| Domain 字段 | 在本后端中的作用 |
-|---|---|
-| `headless` | 传给浏览器启动操作 |
-| `browserPath` | 非空时作为 Puppeteer 的 `executablePath` |
-| `browserType` | `chrome` / `edge` | 保存后动态切换后端 |
+Agent 的 `session.header.cwd` 通过 MCP `roots/list` 传递，同时用作服务工作目录；没有该字段时使用 Host 工作目录。标准输出只用于 MCP 协议，标准错误单独接入 debug 日志。关闭使用统计、CrUX 查询与更新检查；保留网络请求头脱敏与文件路径限制。
 
-后端包 schema 也接受默认值为 `120000` 的 `toolCallTimeoutMs`。该字段目前为组合兼容性保留，但 `ChromeBrowserUseBackend` 不读取它；真正生效的工具超时是 `browser-use-domain.config.toolCallTimeoutMs`。
+`release(owner)` 关闭该 Agent 的 MCP 连接，SDK 关闭 stdin，上游服务负责关闭浏览器并退出。设置中的路径或 headless 改变时回收所有会话。热切换释放旧 owner 会话，但保留后端可再次激活；插件销毁最终关闭全部连接。调用与清理串行执行，避免在工具执行中途回收资源。
 
-## 浏览器选择
+连接建立失败不会缓存失败实例。服务意外退出后，当前调用报错，下一次调用重新连接；不会自动重放可能已产生副作用的操作。
 
-打开共享浏览器时，后端遵循以下规则：
+## 验证
 
-| 设置 | 行为 |
-|---|---|
-| `browserPath` 非空 | 直接启动该可执行文件 |
-| `browserPath` 为空 | 启动 Puppeteer 解析到的 Chrome 稳定版 |
+```powershell
+pnpm typecheck
+pnpm build
+pnpm test
+$env:CHROME_SMOKE='1'
+$env:EDGE_SMOKE='1'
+$env:BROWSER_SWITCH_SMOKE='1'
+pnpm test
+```
 
-### 发现顺序
+普通测试会启动真实 MCP 服务并获取 schema，但不会启动浏览器。可选测试覆盖真实 Chrome 导航、脚本执行、Agent 存储隔离、释放后重建，以及 Edge → Chrome → Edge 热切换。
 
-`discoverBrowserExecutable()` 按顺序检查平台安装候选，并返回第一个可执行路径：
+实现见 `src/index.ts`（目录、执行和生命周期）、`src/connection.ts`（stdio 连接、CLI 参数与 roots）和 `tests/backend.spec.ts`。依赖版本固定，升级仍需验证公开 CLI 参数和工具协议兼容性。
 
-1. Windows 用户目录与 Program Files 中的 Chrome/Edge 路径。
-2. macOS 系统与用户级应用程序包。
-3. Linux 标准二进制目录，再检查 `PATH` 中的目录。
-
-Domain 会在注册设置命名空间前执行发现；用户设置层尚未保存路径时，会把发现结果持久化。
-
-## 资源生命周期
-
-- **共享浏览器：** `browserPromise` 保证并发首次调用复用同一次启动过程。
-- **Owner 隔离：** 后端把每个 owner 对象映射到一个待完成或已就绪的 `McpContext`。
-- **Workspace root：** owner 带有 `session.header.cwd` 时，该目录通过文件 URL 作为根 `workspace` 暴露给上下文。
-- **初始页面：** 每个新 owner 上下文打开名为 `browser-use-<owner-id>` 的页面。
-- **Release：** `release(owner)` 删除 owner 项并销毁其上下文，不关闭其他 owner。
-- **重新配置：** 替换设置提供函数，销毁全部 owner 上下文，清除连接 promise，并调用上游 `closeBrowser()`。
-- **关闭：** 标记后端已销毁并执行同样的完整 reset；重复 close 无害。
-
-Owner 上下文创建失败时，其缓存 promise 会被移除，后续工具调用可以重试。
-
-## 工具目录与执行
-
-构造函数通过 `createTools()` 获取上游工具列表，只保留 `shouldRegister` 为 true 的 handler，并把每个已注册 Zod 输入 schema 转换为 JSON Schema。目录在后端实例生命周期内保持稳定，由 Domain 读取一次。
-
-执行时，每个 owner、每个工具复用一个 `ToolHandler`。上游结果的 `content` 数组与可选 `structuredContent` 会原样返回到共享契约边界。上游 `isError` 结果会转换为 rejected `Error`，优先使用其中的文本内容。
-
-重要上游选项会关闭使用统计与实验分类，禁止无限制路径，隔离页面处理，并在暴露网络数据前脱敏请求头。
-
-## Schema 转换
-
-[`src/json-schema.ts`](src/json-schema.ts) 支持 `chrome-devtools-mcp` 当前使用的 Zod 形状：字符串、数字、布尔、字面量、枚举、数组、optional/default/effect 包装、联合、record 与 object。未知形状退化为 `{}`，object schema 允许额外字段。
-
-## 失败与恢复
-
-- **后端已销毁：** 后续执行拒绝；应重新激活后端插件，而不是复用已关闭实例。
-- **未知工具名：** 在创建 owner 上下文之前拒绝；Domain 应只发布 `tools()` 返回的名称。
-- **启动失败：** 共享浏览器 promise 在 rejection 后清空，后续调用会重新启动。
-- **工具失败：** 上游 `isError` 内容转换为标准 rejected 工具调用。
-- **未找到可执行文件：** 发现会继续检查剩余平台候选；最终为空时回退到 Puppeteer 的稳定版通道。
-
-## 实现地图
-
-| 文件 | 职责 |
-|---|---|
-| [`src/index.ts`](src/index.ts) | 后端注册、浏览器所有权、owner 上下文、工具目录与执行 |
-| [`src/discovery.ts`](src/discovery.ts) | 共享浏览器可执行文件发现的重新导出 |
-| [`src/json-schema.ts`](src/json-schema.ts) | 面向上游工具输入的最小 Zod 到 JSON Schema 投影 |
-| [`src/config.ts`](src/config.ts) | 后端插件配置 schema |
-| [`src/chrome-types.d.ts`](src/chrome-types.d.ts) | 固定版本上游内部模块的本地声明 |
-| [`tests/discovery.spec.ts`](tests/discovery.spec.ts) | Chrome/Edge 可执行文件候选与回退行为 |
-| [`tests/json-schema.spec.ts`](tests/json-schema.spec.ts) | 真实上游 Chrome 工具 schema 的投影 |
-
-## 模型体验
-
-本后端提供由 Domain 暴露给模型的工具名、描述、schema 和结果，自身不注入提示词。上游 MCP 上下文配置会脱敏网络请求头，并禁止无限制文件系统路径。
-
-## 已知限制
-
-- 实现导入 `chrome-devtools-mcp` 的内部 `build/src` 模块，并固定在版本 `1.8.0`；上游内部变化可能造成破坏。
-- Edge 使用 Playwright MCP；启用两个后端插件后，可通过设置页热切换浏览器。
-- 上游浏览器 helper 是进程全局单例；重新配置或关闭会对该共享 helper 调用 `closeBrowser()`。
-- 所有 owner 共用一个浏览器连接和一个后端 mutex，因此部分操作可能串行化。
-- Schema 转换有意只支持部分 Zod 节点；不支持的节点会退化为无约束 schema。
-- 测试使用 mock 和 schema 投影，不启动浏览器，也不验证真实 DevTools 会话。
-
-## 相关文档
-
-- [包组地图](../README.md)
-- [Hub 参考](../browser-use/README.md)
-- [Domain 参考](../browser-use-domain/README.md)
-- [仓库指南](../../../README.md)
+后端源码由 `config.ts`、`connection.ts` 和 `index.ts` 组成。浏览器路径发现与测试归 Hub 管理，Chrome 的 discovery 转发文件已移除。

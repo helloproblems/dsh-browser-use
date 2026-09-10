@@ -25,6 +25,7 @@ it.runIf(process.env.BROWSER_SWITCH_SMOKE === '1')('operates Edge, Chrome, then 
   const owner = {}
   try {
     await edge.initialize()
+    await chrome.initialize()
     await switcher.attach('edge', edge)
     await switcher.attach('chrome', chrome)
     const navigate = tools.get('edge:browser_navigate')!

@@ -1,108 +1,119 @@
-import { pathToFileURL } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import { browserUseBackendServiceKey, type BrowserUseBackend, type BrowserUseResult, type BrowserUseSettings, type BrowserUseTool } from 'browser-use'
-import { closeBrowser, ensureBrowserLaunched } from 'chrome-devtools-mcp/build/src/browser.js'
-import { McpContext } from 'chrome-devtools-mcp/build/src/McpContext.js'
-import { ToolHandler } from 'chrome-devtools-mcp/build/src/ToolHandler.js'
-import { createTools } from 'chrome-devtools-mcp/build/src/tools/tools.js'
-import { Mutex } from 'chrome-devtools-mcp/build/src/third_party/index.js'
 import { Config, type Config as ChromeConfig } from './config.js'
-import { zodInputToJsonSchema } from './json-schema.js'
+import { connectChrome, type ChromeConnector, type ChromeRuntime } from './connection.js'
 
 export const name = 'browser-use-chrome'
 export const inject = ['browserUse']
-export { Config, zodInputToJsonSchema }
-
-interface OwnerLike { id?: unknown; session?: { header?: { cwd?: string } } }
-interface SessionRuntime { context: McpContext; handlers: Map<string, ToolHandler> }
-const serverArgs: Record<string, unknown> = { usageStatistics: false, performanceCrux: false, pageIdRouting: false, slim: false, isolated: true, allowUnrestrictedPaths: false, categoryExtensions: false, experimentalDevtools: false, experimentalIncludeAllPages: false, redactNetworkHeaders: true }
-
-function textOf(content: BrowserUseResult['content']): string {
-  return content.flatMap((item) => {
-    if (typeof item !== 'object' || item === null || Array.isArray(item)) return []
-    const value = item as Record<string, unknown>
-    return value.type === 'text' && typeof value.text === 'string' ? [value.text] : []
-  }).join('\n')
-}
+export { Config }
 
 export class ChromeBrowserUseBackend implements BrowserUseBackend {
   readonly browserType = 'chrome'
-  private browserPromise: Promise<any> | undefined
-  private readonly sessions = new Map<object, Promise<SessionRuntime>>()
-  private readonly mutex = new Mutex()
-  private readonly rawTools = new Map<string, any>()
-  private readonly catalog: BrowserUseTool[]
+  private catalog: BrowserUseTool[] = []
+  private initialized = false
+  private settings: BrowserUseSettings
+  private readonly sessions = new Map<object, ChromeRuntime>()
+  private queue: Promise<unknown> = Promise.resolve()
   private disposed = false
+  private closing?: Promise<void>
+  private readonly connect: ChromeConnector
 
-  constructor(private settings: () => BrowserUseSettings, private readonly logger: Context['logger'], private readonly config: ChromeConfig) {
-    this.catalog = createTools(serverArgs).flatMap((tool) => {
-      const handler = new ToolHandler(tool, serverArgs, async () => undefined, new Mutex())
-      if (!handler.shouldRegister) return []
-      this.rawTools.set(tool.name, tool)
-      return [{ name: tool.name, description: tool.description ?? '', parameters: zodInputToJsonSchema(handler.registeredInputSchema) }]
+  constructor(settings: () => BrowserUseSettings, private readonly logger: Context['logger'], private readonly config: ChromeConfig, connect?: ChromeConnector) {
+    this.settings = { ...settings() }
+    this.connect = connect ?? ((settings, owner) => connectChrome(settings, owner, message => logger.debug(message)))
+  }
+
+  initialize(): Promise<void> {
+    return this.enqueue(async () => {
+      this.assertActive()
+      if (this.initialized) return
+      const runtime = await this.connect(this.settings, {})
+      const catalog: BrowserUseTool[] = []
+      try {
+        let cursor: string | undefined
+        do {
+          const result = await runtime.client.listTools({ cursor })
+          catalog.push(...result.tools.map(tool => ({ name: tool.name, description: tool.description ?? '', parameters: tool.inputSchema })))
+          cursor = result.nextCursor
+        } while (cursor)
+        this.catalog = catalog
+        this.initialized = true
+      } finally { await runtime.close() }
     })
   }
 
   tools(): readonly BrowserUseTool[] { return this.catalog }
 
-  async execute(owner: object, toolName: string, args: Record<string, unknown>): Promise<BrowserUseResult> {
-    if (this.disposed) throw new Error('Chrome browser-use backend is disposed')
-    const tool = this.rawTools.get(toolName)
-    if (!tool) throw new Error(`unknown Chrome tool '${toolName}'`)
-    const runtime = await this.runtimeFor(owner)
-    let handler = runtime.handlers.get(toolName)
-    if (!handler) { handler = new ToolHandler(tool, serverArgs, async () => runtime.context, this.mutex); runtime.handlers.set(toolName, handler) }
-    const result = await handler.handle({ ...args })
-    const content = Array.isArray(result.content) ? result.content as BrowserUseResult['content'] : []
-    if (result.isError) throw new Error(textOf(content) || `${toolName} failed`)
-    return { content, ...(result.structuredContent === undefined ? {} : { structuredContent: result.structuredContent as BrowserUseResult['structuredContent'] }) }
-  }
-
-  release(owner: object): void { const pending = this.sessions.get(owner); this.sessions.delete(owner); void pending?.then(runtime => runtime.context.dispose(), () => undefined) }
-  async reconfigure(settings: BrowserUseSettings): Promise<void> { this.settings = () => settings; await this.resetBrowser() }
-  async close(): Promise<void> { if (this.disposed) return; this.disposed = true; await this.resetBrowser() }
-
-  private runtimeFor(owner: object): Promise<SessionRuntime> {
-    let runtime = this.sessions.get(owner)
-    if (!runtime) { runtime = this.createRuntime(owner as OwnerLike); this.sessions.set(owner, runtime); void runtime.catch(() => { if (this.sessions.get(owner) === runtime) this.sessions.delete(owner) }) }
-    return runtime
-  }
-
-  private async createRuntime(owner: OwnerLike): Promise<SessionRuntime> {
-    const browser = await this.browser()
-    const context = await McpContext.from(browser, (...args: unknown[]) => this.logger.debug(args.map(String).join(' ')), { performanceCrux: false, allowUnrestrictedPaths: false })
-    const cwd = owner.session?.header?.cwd
-    if (cwd) (context as any).setRoots([{ uri: pathToFileURL(cwd).href, name: 'workspace' }])
-    await (context as any).newPage(false, `browser-use-${String(owner.id ?? 'session')}`)
-    return { context, handlers: new Map() }
-  }
-
-  private browser(): Promise<any> { this.browserPromise ??= this.openBrowser(); void this.browserPromise.catch(() => { this.browserPromise = undefined }); return this.browserPromise }
-  private async openBrowser(): Promise<any> {
-    const settings = this.settings()
-    const executablePath = settings.browserPath.trim() || undefined
-    const target = executablePath ?? 'the system Chrome installation'
-    this.logger.info(`browser-use-chrome: launching ${target} (headless=${String(settings.headless)})`)
-    return ensureBrowserLaunched({
-      headless: settings.headless,
-      channel: executablePath ? undefined : 'stable',
-      executablePath,
-      isolated: false,
-      viaCli: false,
-      chromeArgs: [],
-      ignoreDefaultChromeArgs: [],
+  execute(owner: object, toolName: string, args: Record<string, unknown>): Promise<BrowserUseResult> {
+    if (this.disposed) return Promise.reject(new Error('Chrome browser-use backend is disposed'))
+    return this.enqueue(async () => {
+      if (!this.initialized) throw new Error('Chrome MCP backend is not initialized')
+      if (!this.catalog.some(tool => tool.name === toolName)) throw new Error(`unknown Chrome tool '${toolName}'`)
+      let runtime = this.sessions.get(owner)
+      if (!runtime || runtime.closed) {
+        this.sessions.delete(owner)
+        await runtime?.close()
+        runtime = await this.connect(this.settings, owner)
+        this.sessions.set(owner, runtime)
+      }
+      const result = await runtime.client.callTool({ name: toolName, arguments: args }, undefined, { timeout: this.config.toolCallTimeoutMs })
+      const content = (result.content ?? []) as BrowserUseResult['content']
+      if (result.isError) {
+        const message = content.flatMap(item => item && typeof item === 'object' && !Array.isArray(item) && item.type === 'text' ? [String(item.text)] : []).join('\n')
+        throw new Error(message || `${toolName} failed`)
+      }
+      return { content, ...(result.structuredContent === undefined ? {} : { structuredContent: result.structuredContent as BrowserUseResult['structuredContent'] }) }
     })
   }
-  private async resetBrowser(): Promise<void> {
-    const pending = [...this.sessions.values()]; this.sessions.clear()
-    for (const runtime of await Promise.allSettled(pending)) if (runtime.status === 'fulfilled') runtime.value.context.dispose()
-    this.browserPromise = undefined; await closeBrowser()
+
+  release(owner: object): void {
+    void this.enqueue(async () => {
+      const runtime = this.sessions.get(owner)
+      this.sessions.delete(owner)
+      await runtime?.close()
+    }).catch(error => this.logger.warn(String(error)))
+  }
+
+  reconfigure(settings: BrowserUseSettings): Promise<void> {
+    const next = { ...settings }
+    return this.enqueue(async () => {
+      this.assertActive()
+      if (next.browserType !== 'chrome') throw new Error('Chrome backend requires browserType: chrome')
+      if (next.headless === this.settings.headless && next.browserPath === this.settings.browserPath) return
+      this.settings = next
+      await this.reset()
+    })
+  }
+
+  close(): Promise<void> {
+    this.disposed = true
+    return this.closing ??= this.enqueue(() => this.reset())
+  }
+
+  private assertActive(): void {
+    if (this.disposed) throw new Error('Chrome browser-use backend is disposed')
+  }
+
+  private enqueue<T>(operation: () => Promise<T>): Promise<T> {
+    const pending = this.queue.then(operation)
+    this.queue = pending.catch(() => {})
+    return pending
+  }
+
+  private async reset(): Promise<void> {
+    const sessions = [...this.sessions.values()]
+    this.sessions.clear()
+    const results = await Promise.allSettled(sessions.map(runtime => runtime.close()))
+    const errors = results.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+    if (errors.length) throw new AggregateError(errors, 'Failed to close Chrome MCP sessions')
   }
 }
 
-export function apply(ctx: Context, config: ChromeConfig): void {
+export async function apply(ctx: Context, config: ChromeConfig): Promise<void> {
   const fallback: BrowserUseSettings = { headless: false, browserType: 'chrome', browserPath: '' }
   const backend = new ChromeBrowserUseBackend(() => fallback, ctx.logger, config)
-  ctx.effect(() => { const unregister = ctx.browserUse.backend.register('chrome', backend); return async () => { unregister(); await backend.close() } })
+  ctx.effect(() => () => backend.close())
+  await backend.initialize()
+  ctx.effect(() => ctx.browserUse.backend.register('chrome', backend))
   ctx.provide(browserUseBackendServiceKey('chrome'), backend)
 }

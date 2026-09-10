@@ -20,5 +20,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
     "@playwright/mcp": "0.0.80"
+  },
+  "devDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2"
   }
 }

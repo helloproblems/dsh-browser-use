@@ -102,7 +102,7 @@ export class BackendSwitcher {
   private async releaseActive(previous: Active): Promise<void> {
     for (const owner of previous.owners) previous.backend.release(owner)
     previous.owners.clear()
-    // Drain Edge's releases; Chrome also closes its shared browser here.
+    // Drain queued MCP session releases before finishing the switch.
     // close() belongs to the provider and would permanently dispose the backend.
     if ([...this.available.values()].includes(previous.backend)) await previous.backend.reconfigure(previous.settings)
   }

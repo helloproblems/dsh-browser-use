@@ -29,7 +29,7 @@ The family keeps composition, semantics, and resources separate:
 1. `browser-use` mounts `ctx.browserUse` and exposes a name-to-backend registry. It performs no browser IO.
 2. A backend plugin injects the Hub, registers an implementation, and publishes `browserUse.backend.<name>` as a lifecycle-only Cordis service.
 3. `browser-use-domain` waits for the configured lifecycle service, resolves the backend through the registry, and registers its stable tool catalog with `ctx.tools`.
-4. Tool execution passes the initiating Agent object to the backend as an opaque owner, allowing one shared browser connection with isolated owner contexts.
+4. Tool execution passes the initiating Agent object to the backend as an opaque owner, allowing independent MCP sessions and browser resources for each owner.
 5. Settings changes are forwarded to the backend; agent disposal releases only that agent's resources, while plugin disposal closes the complete backend.
 
 Cordis service availability controls activation. YAML row order is for readability and is not the synchronization mechanism.
@@ -124,7 +124,7 @@ Use `pnpm pack:bundle` for an unpublished local installation. A plain `pnpm pack
 
 - Edge uses isolated sessions; it does not attach to everyday browser windows or persist logins across restarts.
 - Browser settings hot-switch the active backend without restarting. Both provider plugins must be enabled.
-- The Chrome implementation imports pinned internal modules from `chrome-devtools-mcp@1.8.0`; upgrading that dependency requires compatibility verification.
+- Chrome connects to `chrome-devtools-mcp@1.8.0` through standard MCP stdio; upgrades require CLI and tool protocol compatibility checks.
 - Browser state is process-local and is not restored after a Host restart.
 - Tests cover MCP discovery and lifecycle. Set `EDGE_SMOKE=1` to test navigation, clicking and session isolation in installed Edge.
 

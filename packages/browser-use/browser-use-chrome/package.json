@@ -4,13 +4,25 @@
   "description": "Chrome backend for browser-use",
   "type": "module",
   "main": "lib/index.js",
-  "exports": { ".": "./lib/index.js", "./package.json": "./package.json" },
-  "files": ["lib", "README.md", "README.en.md"],
-  "dependencies": { "chrome-devtools-mcp": "1.8.0" },
-  "peerDependencies": {
-    "browser-use": "workspace:^",
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-util-values": "0.1.5-alpha.1"
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
   },
-  "devDependencies": { "@deepseek-ai/schemastery": "^3.18.2" }
+  "files": [
+    "lib",
+    "README.md",
+    "README.en.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "chrome-devtools-mcp": "1.8.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-util-values": "0.1.5-alpha.1",
+    "browser-use": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2"
+  }
 }

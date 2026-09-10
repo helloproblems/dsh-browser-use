@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { browserExecutableCandidates, discoverBrowserExecutable } from '../src/discovery.js'
+import { browserExecutableCandidates, discoverBrowserExecutable } from '../src/executable.js'
 
 describe('browser executable discovery', () => {
   it('includes Chrome and Edge stable locations on Windows', () => {

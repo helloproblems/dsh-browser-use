@@ -108,6 +108,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: 0.1.5-alpha.1
         version: 0.1.5-alpha.1(@deepseek-ai/cordis@4.0.2)
+      '@modelcontextprotocol/sdk':
+        specifier: 1.30.0
+        version: 1.30.0(zod@4.5.4)
       browser-use:
         specifier: workspace:^
         version: link:../browser-use
@@ -173,6 +176,10 @@ importers:
       browser-use:
         specifier: workspace:^
         version: link:../browser-use
+    devDependencies:
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.2
+        version: 3.18.2
 
 packages:
 

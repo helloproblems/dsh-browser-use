@@ -29,7 +29,7 @@ kind: "repository"
 1. `browser-use` 挂载 `ctx.browserUse`，并提供名称到后端的注册表；它不执行浏览器 IO。
 2. 后端插件注入 Hub，注册实现，并发布仅用于生命周期同步的 Cordis 服务 `browserUse.backend.<name>`。
 3. `browser-use-domain` 等待配置指定的生命周期服务，通过注册表解析后端，再把稳定工具目录注册到 `ctx.tools`。
-4. 工具执行时把发起调用的 Agent 对象作为不透明 owner 传给后端，从而在共享浏览器连接上隔离各 owner 的上下文。
+4. 工具执行时把发起调用的 Agent 对象作为不透明 owner 传给后端，从而为各 owner 维护独立 MCP 会话和浏览器资源。
 5. 设置变更转发给后端；Agent 销毁只释放该 Agent 的资源，插件销毁则关闭整个后端。
 
 激活由 Cordis 服务可用性驱动。YAML 行顺序只服务于阅读，不承担同步语义。
@@ -124,7 +124,7 @@ pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path
 
 - Edge 使用隔离会话，不接管日常浏览器窗口，不跨重启保留登录状态。
 - 在设置页保存浏览器类型即可热切换，无需重启；两个后端插件须已启用。
-- Chrome 实现依赖 `chrome-devtools-mcp@1.8.0` 的内部模块；升级该依赖时必须重新验证兼容性。
+- Chrome 通过标准 MCP stdio 协议连接 `chrome-devtools-mcp@1.8.0`；升级须验证 CLI 参数和工具协议兼容性。
 - 浏览器状态只存在于当前进程，Host 重启后不会恢复。
 - 测试覆盖 MCP 工具发现与资源生命周期；设置 `EDGE_SMOKE=1` 可运行本机 Edge 导航、点击和会话隔离测试。
 

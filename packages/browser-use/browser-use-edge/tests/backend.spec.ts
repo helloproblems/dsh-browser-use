@@ -32,11 +32,12 @@ describe('Edge MCP backend', () => {
       runtimes.push(runtime)
       return runtime
     })
-    const backend = new EdgeBrowserUseBackend(connect)
+    const backend = new EdgeBrowserUseBackend(connect, undefined, { toolCallTimeoutMs: 43210 })
     await backend.initialize()
     expect(runtimes[0].close).toHaveBeenCalledOnce()
     const a = {}, b = {}
     const result = await backend.execute(a, 'action', {})
+    expect(runtimes[1].client.callTool).toHaveBeenCalledWith({ name: 'action', arguments: {} }, undefined, { timeout: 43210 })
     expect(result.structuredContent).toEqual({ ok: true })
     expect(result.content[0]).toMatchObject({ type: 'image' })
     await backend.execute(a, 'action', {})

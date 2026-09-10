@@ -1,5 +1,5 @@
 ---
-description: "Chrome backend reference for executable discovery, browser ownership, per-Agent contexts, and chrome-devtools-mcp tool execution."
+description: "Chrome backend using the standard MCP stdio protocol."
 kind: "package-reference"
 ---
 
@@ -7,121 +7,52 @@ kind: "package-reference"
 
 English | [中文](README.md)
 
-## Summary
+## Integration
 
-`browser-use-chrome` is the working backend for the browser-use family. It registers backend `chrome`, publishes lifecycle service `browserUse.backend.chrome`, builds a tool catalog from `chrome-devtools-mcp@1.8.0`, and executes those tools through one process-shared browser with one `McpContext` per opaque owner. It launches the configured browser executable, or lets Puppeteer resolve the system Chrome channel when no path is available.
+The official MCP SDK `Client` and `StdioClientTransport` launch the installed `chrome-devtools-mcp@1.8.0` CLI. Its entry point is resolved from the dependency's declared `bin` field. No runtime package download, listening port or upstream internal tool imports are required.
 
-The package owns browser resources only. `browser-use-domain` owns DSH tool registration, tool timeout, settings, and Agent lifecycle.
+```text
+DSH Domain → MCP Client → stdin/stdout JSON-RPC → chrome-devtools-mcp → Chrome
+```
 
-## Use this package
+Initialization performs an MCP handshake and `tools/list`, preserving names, descriptions and original JSON Schema, then closes the discovery connection without launching Chrome. Execution uses `tools/call`, preserving `content` and `structuredContent` and rejecting MCP `isError` results. Client version metadata comes from this package's package.json.
 
-Mount it between the Hub and Domain in a composition:
+Domain still publishes `mcp__chrome__*`, including `new_page`, `click` and `take_snapshot`. No migration to Playwright tool names is needed. Schemas now come directly from the server; the old Zod converter and internal module declarations were removed.
+
+## Configuration
+
+The default bundle selects Chrome and enables Edge for hot switching. A Chrome-only composition:
 
 ```yaml
 - name: browser-use
 - name: browser-use-chrome
+  config:
+    toolCallTimeoutMs: 120000
 - name: browser-use-domain
   config:
     backend: chrome
-    headless: false
     browserType: chrome
+    headless: false
     browserPath: ''
     toolCallTimeoutMs: 120000
 ```
 
-When `browserPath` is empty, the Domain detects the selected browser executable and persists it to DSH settings. If no executable is found, the backend still asks `chrome-devtools-mcp` to resolve and launch the stable Chrome channel.
+A non-empty browser path is passed via `--executable-path`; otherwise Domain discovers the executable or the server uses `--channel stable`. `headless` controls browser visibility. Backend `toolCallTimeoutMs` controls MCP requests (default 120 seconds); Domain has its own DSH tool timeout. Handshakes have a 30-second timeout.
 
-## Configuration ownership
+## Sessions and cleanup
 
-Browser connection fields are defined by `browser-use-domain` and forwarded through `BrowserUseSettings`:
+Each Agent lazily creates a separate MCP server process, which launches Chrome with `--isolated` and a temporary profile. Calls from the same Agent reuse the connection; different Agents do not share profiles. This provides stronger process isolation at a higher multi-Agent resource cost than the old shared browser implementation.
 
-| Domain field | Effect in this backend |
-|---|---|
-| `headless` | Passed to the browser launch operation |
-| `browserPath` | Passed to Puppeteer as `executablePath` when non-empty |
-| `browserType` | `chrome` / `edge` | Selects the active backend at runtime |
+The Agent workspace is supplied through MCP `roots/list` and used as the server cwd, falling back to the Host cwd. stdout is reserved for MCP; stderr is drained into debug logs. Usage statistics, CrUX and update checks are disabled; network header redaction and file path restrictions remain enabled.
 
-The backend package schema also accepts `toolCallTimeoutMs` with default `120000`. This field is currently retained for composition compatibility but is not read by `ChromeBrowserUseBackend`; the effective registered tool timeout is `browser-use-domain.config.toolCallTimeoutMs`.
+Releasing an Agent closes its MCP connection. The SDK ends stdin, and the upstream server closes the browser and exits. Path/headless changes recycle sessions. Hot switching releases old owners without permanently disposing the backend. Plugin disposal closes all connections. Calls and cleanup are serialized.
 
-## Browser selection
+Failed connections are not cached. An unexpected server exit fails the current call; a later call reconnects without replaying potentially side-effecting operations.
 
-When opening the shared browser, the backend follows these rules:
+## Verification
 
-| Settings | Behavior |
-|---|---|
-| Non-empty `browserPath` | Launch that executable directly |
-| Empty `browserPath` | Launch Puppeteer's stable Chrome channel |
+Run `pnpm typecheck`, `pnpm build` and `pnpm test`. Ordinary tests launch the real MCP server for schema discovery, without launching a browser. Set `CHROME_SMOKE=1`, `EDGE_SMOKE=1` and `BROWSER_SWITCH_SMOKE=1` for installed-browser tests covering Chrome navigation, script execution, Agent storage isolation, release/recreation and Edge → Chrome → Edge switching.
 
-### Discovery order
+See `src/index.ts` for catalog/execution/lifecycle, `src/connection.ts` for stdio/CLI/roots, and `tests/backend.spec.ts` for validation. Dependencies remain pinned; upgrades require verifying public CLI and protocol compatibility.
 
-`discoverBrowserExecutable()` checks platform installation candidates in order and returns the first executable path:
-
-1. Windows per-user and Program Files Chrome/Edge locations.
-2. macOS system and per-user application bundles.
-3. Linux standard binary directories followed by entries from `PATH`.
-
-The Domain runs discovery before registering the settings namespace and persists a detected path when the user layer does not already contain one.
-
-## Resource lifecycle
-
-- **Shared browser:** `browserPromise` ensures concurrent first calls share one launch operation.
-- **Owner isolation:** the backend maps each owner object to one pending or ready `McpContext`.
-- **Workspace root:** when the owner carries `session.header.cwd`, that directory is exposed to the context as root `workspace` through a file URL.
-- **Initial page:** every new owner context opens a page named `browser-use-<owner-id>`.
-- **Release:** `release(owner)` removes the owner entry and disposes its context without closing other owners.
-- **Reconfigure:** replaces the settings supplier, disposes all owner contexts, clears the connection promise, and calls upstream `closeBrowser()`.
-- **Close:** marks the backend disposed and performs the same complete reset; repeated close calls are harmless.
-
-A failed owner-context creation removes its cached promise so a later tool call can retry.
-
-## Tool catalog and execution
-
-The constructor obtains the upstream tool list through `createTools()`, keeps only handlers whose `shouldRegister` flag is true, and converts each registered Zod input schema to JSON Schema. The catalog is stable for the backend instance and is consumed once by the Domain.
-
-Execution reuses one `ToolHandler` per owner and tool. The upstream result's `content` array and optional `structuredContent` are returned unchanged at the shared contract boundary. An upstream `isError` result becomes a rejected `Error`, using textual content when available.
-
-Important upstream options disable usage statistics and experimental categories, disallow unrestricted paths, isolate page handling, and redact network headers before exposure.
-
-## Schema conversion
-
-[`src/json-schema.ts`](src/json-schema.ts) supports the Zod shapes currently used by `chrome-devtools-mcp`: strings, numbers, booleans, literals, enums, arrays, optional/default/effect wrappers, unions, records, and objects. Unknown shapes fall back to `{}`, and object schemas allow additional properties.
-
-## Failures and recovery
-
-- **Disposed backend:** further execution rejects; reactivate the backend plugin rather than reusing the closed instance.
-- **Unknown tool name:** execution rejects before creating an owner context; the Domain should only publish names from `tools()`.
-- **Launch failure:** the shared browser promise clears after rejection, so a later call retries the launch.
-- **Tool failure:** upstream `isError` content becomes a normal rejected tool call.
-- **Missing detected executable:** discovery continues through the remaining platform candidates; an empty result falls back to Puppeteer's stable channel.
-
-## Implementation map
-
-| File | Responsibility |
-|---|---|
-| [`src/index.ts`](src/index.ts) | Backend registration, browser ownership, owner contexts, catalog, and execution |
-| [`src/discovery.ts`](src/discovery.ts) | Re-export of shared browser executable discovery |
-| [`src/json-schema.ts`](src/json-schema.ts) | Minimal Zod-to-JSON-Schema projection for upstream tool inputs |
-| [`src/config.ts`](src/config.ts) | Backend plugin configuration schema |
-| [`src/chrome-types.d.ts`](src/chrome-types.d.ts) | Local declarations for pinned upstream internal modules |
-| [`tests/discovery.spec.ts`](tests/discovery.spec.ts) | Chrome/Edge executable candidate and fallback behavior |
-| [`tests/json-schema.spec.ts`](tests/json-schema.spec.ts) | Projection of a real upstream Chrome tool schema |
-
-## Model experience
-
-This backend supplies the tool names, descriptions, schemas, and results that the Domain exposes to the model. It injects no prompt by itself. Network headers are configured for redaction, and unrestricted filesystem paths are disabled in the upstream MCP context.
-
-## Known limitations
-
-- The implementation imports `chrome-devtools-mcp` internal `build/src` modules and is pinned to version `1.8.0`; upstream internal changes can break it.
-- Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
-- The upstream browser helper is process-global. Reconfiguration or closure calls `closeBrowser()` for that shared helper.
-- All owners share one browser connection and one backend mutex, so some operations may serialize.
-- Schema conversion is intentionally partial; unsupported Zod nodes degrade to an unconstrained schema.
-- Tests use mocks and schema projection. They do not launch a browser or validate a live DevTools session.
-
-## Related documentation
-
-- [Package group map](../README.en.md)
-- [Hub reference](../browser-use/README.en.md)
-- [Domain reference](../browser-use-domain/README.en.md)
-- [Repository guide](../../../README.en.md)
+The backend source contains `config.ts`, `connection.ts` and `index.ts`. Executable discovery and its tests live in the Hub; the Chrome discovery re-export has been removed.

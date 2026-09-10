@@ -11,6 +11,8 @@
 ```yaml
 - name: browser-use
 - name: browser-use-edge
+  config:
+    toolCallTimeoutMs: 120000
 - name: browser-use-domain
   config:
     backend: edge
@@ -22,7 +24,7 @@
 
 空路径使用系统 Edge。设置页切换类型会清空旧路径并热切换后端，无需重启。已有用户设置优先于 bundle 默认值。
 
-Agent 销毁关闭该 Agent 的会话；实际路径或 headless 设置变化会回收所有会话；插件销毁关闭所有连接。生命周期与工具执行串行化，避免执行中途清理；目前不同 Agent 的工具调用也串行执行。MCP 单次请求上限为 120 秒，Domain 超时独立配置。
+Agent 销毁关闭该 Agent 的会话；实际路径或 headless 设置变化会回收所有会话；插件销毁关闭所有连接。生命周期与工具执行串行化，避免执行中途清理；目前不同 Agent 的工具调用也串行执行。后端 `toolCallTimeoutMs` 控制 MCP 请求超时，默认 120 秒；Domain 超时独立配置。
 
 工作目录通过 MCP roots 传递。启用上游 core 工具；截图内容块保留，但现有 Domain UI 摘要只渲染文字。当前不提供扩展/CDP 接管模式，不保存跨重启登录状态。依赖版本已固定，升级须重跑兼容性测试。
 
@@ -35,3 +37,11 @@ pnpm build
 ```
 
 普通测试检查真实 MCP 工具目录和模拟会话生命周期。`EDGE_SMOKE=1` 额外启动本机无头 Edge，验证本地页面导航、点击和 Agent 存储隔离。
+
+## 源码结构
+
+- `config.ts`：后端配置 schema。
+- `connection.ts`：MCP 连接、workspace roots 与连接清理；客户端版本从 package.json 读取。
+- `index.ts`：插件注册、工具目录、执行与 Agent 生命周期。
+
+浏览器路径发现及其测试归 Hub 管理。Chrome 与 Edge 均采用这三个源码文件。
