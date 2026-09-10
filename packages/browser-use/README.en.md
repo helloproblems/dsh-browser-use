@@ -67,7 +67,7 @@ This service-driven activation prevents registration races without making YAML r
 - [Hub reference](browser-use/README.en.md) for the backend contract and registry errors.
 - [Domain reference](browser-use-domain/README.en.md) for tool naming, settings, and lifecycle behavior.
 - [Chrome backend reference](browser-use-chrome/README.en.md) for executable discovery and browser ownership.
-- Edge is available through Playwright MCP. Set Domain `backend: edge` and `browserType: edge`, enable its plugin, and restart.
+- Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
 
 ## Development
 

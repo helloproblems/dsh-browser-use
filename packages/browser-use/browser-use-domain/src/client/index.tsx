@@ -130,12 +130,12 @@ function Section({ remote }: { remote: any }) {
   }
   return <div style={{ maxWidth: 760 }}>
     <div style={row}>
-      <div><div style={label}>浏览器类型</div><div style={desc}>选择浏览器自动化使用的浏览器类型。</div></div>
+      <div><div style={label}>浏览器类型</div><div style={desc}>保存后切换浏览器，无需重启；旧浏览器会话将被释放。</div></div>
       <select
         aria-label="浏览器类型"
         value={draft.browserType}
         style={{ ...input, ...control }}
-        onChange={event => { setDraft({ ...draft, browserType: event.target.value as BrowserType }) }}
+        onChange={event => { setDraft({ ...draft, browserType: event.target.value as BrowserType, browserPath: '' }) }}
       >
         <option value="chrome">Google Chrome</option>
         <option value="edge">Microsoft Edge</option>
@@ -148,12 +148,12 @@ function Section({ remote }: { remote: any }) {
       </div>
     </div>
     <div style={row}>
-      <div><div style={label}>浏览器位置</div><div style={desc}>自动检索并保存浏览器可执行文件位置，也可手动指定。</div></div>
+      <div><div style={label}>浏览器位置</div><div style={desc}>留空时自动检索所选浏览器，也可手动指定。</div></div>
       <div style={{ ...control, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: 8 }}>
         <input
           aria-label="浏览器位置"
           value={draft.browserPath}
-          placeholder="未找到浏览器"
+          placeholder="自动检索所选浏览器"
           style={input}
           onChange={event => { setDraft({ ...draft, browserPath: event.target.value }) }}
         />

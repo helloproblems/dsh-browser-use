@@ -36,13 +36,13 @@ kind: "repository"
 
 ## Bundle
 
-根包名为 `dsh-browser-use`。其 [`cordis.patch.yml`](cordis.patch.yml) 默认挂载 Hub、Edge 后端和 Domain，Chrome 后端保留为可选项。
+根包名为 `dsh-browser-use`。其 [`cordis.patch.yml`](cordis.patch.yml) 默认挂载 Hub、Chrome 和 Edge 后端及 Domain，初始选择 Chrome，支持通过设置热切换。
 
 | 行 | 默认状态 | 主要配置 |
 |---|---|---|
 | `browser-use` | 启用 | 无 |
-| `browser-use-chrome` | 禁用 | `toolCallTimeoutMs: 120000` |
-| `browser-use-domain` | 启用 | 后端 `edge`、显示 Edge、自动发现、120 秒工具超时 |
+| `browser-use-chrome` | 启用 | `toolCallTimeoutMs: 120000` |
+| `browser-use-domain` | 启用 | 后端 `chrome`、显示 Chrome、自动发现、120 秒工具超时 |
 | `browser-use-edge` | 启用 | Playwright MCP |
 
 实际 DSH 工具超时由 Domain 配置拥有。浏览器连接设置同样由 Domain 管理，并转发给选中的后端。
@@ -123,7 +123,7 @@ pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path
 ## 已知限制
 
 - Edge 使用隔离会话，不接管日常浏览器窗口，不跨重启保留登录状态。
-- 切换浏览器须同步修改 Domain 的 `backend` 与 `browserType` 并重启；GUI 不会动态替换后端。
+- 在设置页保存浏览器类型即可热切换，无需重启；两个后端插件须已启用。
 - Chrome 实现依赖 `chrome-devtools-mcp@1.8.0` 的内部模块；升级该依赖时必须重新验证兼容性。
 - 浏览器状态只存在于当前进程，Host 重启后不会恢复。
 - 测试覆盖 MCP 工具发现与资源生命周期；设置 `EDGE_SMOKE=1` 可运行本机 Edge 导航、点击和会话隔离测试。

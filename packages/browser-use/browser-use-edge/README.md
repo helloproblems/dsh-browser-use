@@ -6,7 +6,7 @@
 
 初始化时通过 `tools/list` 获取稳定工具目录，不启动浏览器。Domain 发布 `mcp__edge__browser_*` 工具；首次调用时才启动 Edge。每个 Agent 拥有独立 MCP 连接与隔离浏览器会话。工具调用使用 `tools/call`，保留内容块和结构化结果，将 MCP `isError` 转为执行错误。
 
-默认 bundle 已启用 Edge。已有安装需更新 bundle 配置并重启：
+默认 bundle 同时启用 Chrome 与 Edge，初始选择 Chrome。可在设置页热切换到 Edge；仅使用 Edge 的组合示例：
 
 ```yaml
 - name: browser-use
@@ -20,7 +20,7 @@
     toolCallTimeoutMs: 120000
 ```
 
-空路径使用系统 Edge（`msedge` channel）；也可指定 Edge 可执行文件。已有用户设置可能覆盖 bundle 默认值，升级后请确认浏览器类型和路径。浏览器下拉框不会替换后端，切换后端须同步修改 Domain `backend` 并重启。
+空路径使用系统 Edge。设置页切换类型会清空旧路径并热切换后端，无需重启。已有用户设置优先于 bundle 默认值。
 
 Agent 销毁关闭该 Agent 的会话；实际路径或 headless 设置变化会回收所有会话；插件销毁关闭所有连接。生命周期与工具执行串行化，避免执行中途清理；目前不同 Agent 的工具调用也串行执行。MCP 单次请求上限为 120 秒，Domain 超时独立配置。
 

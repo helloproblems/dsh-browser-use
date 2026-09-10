@@ -36,13 +36,13 @@ Cordis service availability controls activation. YAML row order is for readabili
 
 ## Bundle
 
-The root package is `dsh-browser-use`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Hub, Edge backend, and Domain, with Chrome available as an optional backend.
+The root package is `dsh-browser-use`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Hub, both Chrome and Edge backends, and Domain, selecting Chrome initially with hot switching through settings.
 
 | Row | Default state | Important configuration |
 |---|---|---|
 | `browser-use` | enabled | none |
-| `browser-use-chrome` | disabled | `toolCallTimeoutMs: 120000` |
-| `browser-use-domain` | enabled | backend `edge`, visible Edge, automatic discovery, 120-second tool timeout |
+| `browser-use-chrome` | enabled | `toolCallTimeoutMs: 120000` |
+| `browser-use-domain` | enabled | backend `chrome`, visible Chrome, automatic discovery, 120-second tool timeout |
 | `browser-use-edge` | enabled | Playwright MCP |
 
 The effective DSH tool timeout is owned by the Domain configuration. Browser connection settings are also owned by the Domain and forwarded to the selected backend.
@@ -123,7 +123,7 @@ Use `pnpm pack:bundle` for an unpublished local installation. A plain `pnpm pack
 ## Known limitations
 
 - Edge uses isolated sessions; it does not attach to everyday browser windows or persist logins across restarts.
-- Switching browsers requires matching Domain `backend` and `browserType` values and a restart; the GUI does not replace backends dynamically.
+- Browser settings hot-switch the active backend without restarting. Both provider plugins must be enabled.
 - The Chrome implementation imports pinned internal modules from `chrome-devtools-mcp@1.8.0`; upgrading that dependency requires compatibility verification.
 - Browser state is process-local and is not restored after a Host restart.
 - Tests cover MCP discovery and lifecycle. Set `EDGE_SMOKE=1` to test navigation, clicking and session isolation in installed Edge.

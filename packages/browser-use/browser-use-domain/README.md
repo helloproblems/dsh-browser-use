@@ -29,15 +29,15 @@ Domain 拥有工具名、工具超时、设置和 Agent 生命周期。它不连
     toolCallTimeoutMs: 120000
 ```
 
-`backend` 字段是注册表身份。Domain 推导 `browserUse.backend.<backend>`，等待该服务后，再通过 `ctx.browserUse.backend.get(backend)` 解析实现。
+`backend` 指定初始浏览器类型对应的注册表身份。Domain 分别监听配置后端、Chrome 和 Edge 的生命周期服务，设置变更后选择对应实现。
 
 ## 配置
 
 | 字段 | 默认值 | 含义 |
 |---|---|---|
-| `backend` | `chrome` | 所有浏览器工具使用的已注册后端 |
+| `backend` | `chrome` | 初始浏览器类型对应的已注册后端 |
 | `headless` | `false` | 仅在后端自行启动浏览器时隐藏窗口 |
-| `browserType` | `chrome` / `edge` | 须与 Domain backend 一致；切换后端需重启 |
+| `browserType` | `chrome` / `edge` | 保存后动态切换后端 |
 | `browserPath` | 空 | 浏览器可执行文件绝对路径；为空时启动阶段自动检索 |
 | `toolCallTimeoutMs` | `120000` | 应用于本 Domain 发布的每个 DSH 工具定义的超时 |
 
@@ -59,11 +59,11 @@ mcp__<backend.browserType>__<backend-tool-name>
 
 ## 设置行为
 
-当 `ctx.settings` 可用时，Host 注册设置命名空间 `browser-use`。未配置浏览器位置时，它会检索所选浏览器的可执行文件，把结果作为解析后的 base，并写入用户设置层。变更由 watcher 转发到 `backend.reconfigure(next)`。初始配置或后续重新配置失败只记录 warning，不会移除已经注册的工具目录。
+当 `ctx.settings` 可用时，Host 注册设置命名空间 `browser-use`。路径为空时自动发现所选浏览器，保留用户设置中的空值表示自动模式。类型变化会切换工具目录；同类型设置变化转发到当前后端。设置监听串行执行，失败记录 warning。
 
 客户端模块注册的设置区域包含：
 
-- Edge 已通过 Playwright MCP 实现。启用对应插件，并将 Domain 的 `backend` 和 `browserType` 同时设为 `edge` 后重启。
+- Edge 使用 Playwright MCP；启用两个后端插件后，可通过设置页热切换浏览器。
 - 无头模式开关。
 - 可编辑的浏览器可执行文件位置与本机文件选择器。
 - 通过 DSH settings remote API 完成的 revision 感知替换。
@@ -73,9 +73,9 @@ mcp__<backend.browserType>__<backend-tool-name>
 ## 生命周期
 
 1. 插件注入 `browserUse` 与 `tools`。
-2. 它动态注入所选后端的生命周期服务。
+2. 它分别监听配置后端、Chrome 与 Edge 的生命周期服务。
 3. 服务可用后，解析后端并发送初始设置快照。
-4. 在本次激活中注册一次后端工具目录。
+4. 设置切换后端时，注册新目录、注销旧目录并释放旧会话。
 5. 全局 `agent/disposed` 监听器调用 `backend.release(agent)`。
 6. 后端包销毁时仍负责注销并关闭完整后端。
 
@@ -103,7 +103,7 @@ mcp__<backend.browserType>__<backend-tool-name>
 ## 已知限制
 
 - 后端选择属于组合期配置，不作为实时 GUI 设置暴露。
-- Edge 已通过 Playwright MCP 实现。启用对应插件，并将 Domain 的 `backend` 和 `browserType` 同时设为 `edge` 后重启。
+- Edge 使用 Playwright MCP；启用两个后端插件后，可通过设置页热切换浏览器。
 - 后端工具目录在每次激活时只读取一次；设置变更不会增加或删除工具。
 - 重新配置失败只是 warning，而不是插件不健康状态，因此后端无法连接时工具仍可能保持注册。
 - 文本 renderer 忽略非文本内容块；调用方仍会收到原始结构化工具值。
@@ -115,3 +115,9 @@ mcp__<backend.browserType>__<backend-tool-name>
 - [Hub 参考](../browser-use/README.md)
 - [Chrome 后端参考](../browser-use-chrome/README.md)
 - [仓库指南](../../../README.md)
+
+## 后端热切换
+
+Chrome 与 Edge 插件同时挂载，浏览器类型设置决定活动工具目录。切换会等待已有调用完成、注销旧工具并释放旧 Agent 会话；旧工具引用会明确报错。目标后端不可用或配置失败时保留原工具目录并记录错误；目标插件挂载后自动重试。设置异步生效，保存成功不代表浏览器已启动，下一次工具调用才启动浏览器。`backend` 配置保留为初始浏览器类型的别名，其他类型按名称解析。
+
+设置 `BROWSER_SWITCH_SMOKE=1` 可运行本机浏览器测试：同一进程依次在 Edge、Chrome、Edge 中执行导航。

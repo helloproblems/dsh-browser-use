@@ -3,6 +3,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { browserUseBackendServiceKey, discoverBrowserExecutable, type BrowserUseBackend, type BrowserUseSettings } from 'browser-use'
+import { BackendSwitcher } from './backend-switcher.js'
 import { registerBrowserPicker } from './browser-picker.js'
 import { Config, SETTINGS_NAMESPACE, SettingsSchema, type Config as DomainConfig } from './config.js'
 import type {} from '@deepseek-ai/dsh-settings'
@@ -25,7 +26,7 @@ function requireAgent(exec: ToolRunContext): Agent {
   return exec.agent
 }
 
-function definition(backend: BrowserUseBackend, tool: ReturnType<BrowserUseBackend['tools']>[number], timeoutMs: number): ToolDefinition {
+function definition(backend: BrowserUseBackend, tool: ReturnType<BrowserUseBackend['tools']>[number], timeoutMs: number, execute: BrowserUseBackend['execute']): ToolDefinition {
   return {
     name: `mcp__${backend.browserType}__${tool.name}`,
     description: tool.description,
@@ -39,46 +40,50 @@ function definition(backend: BrowserUseBackend, tool: ReturnType<BrowserUseBacke
     },
     timeoutMs,
     async execute(args, exec) {
-      return backend.execute(requireAgent(exec), tool.name, (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>)
+      return execute(requireAgent(exec), tool.name, (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>)
     },
   }
 }
 
-export function apply(ctx: Context, config: DomainConfig): Promise<void> {
-  const backendService = browserUseBackendServiceKey(config.backend)
-  const fiber = ctx.inject([backendService], async (domainCtx) => {
-    const backend = domainCtx.browserUse.backend.get(config.backend)
-    const configuredPath = config.browserPath.trim()
-    const detectedPath = configuredPath === ''
-      ? await discoverBrowserExecutable(config.browserType)
-      : undefined
-    let current: BrowserUseSettings = {
-      headless: config.headless,
-      browserType: config.browserType,
-      browserPath: configuredPath || detectedPath || '',
-    }
-    await backend.reconfigure(current).catch(error => domainCtx.logger.warn(`browser-use: initial configuration failed: ${String(error)}`))
-    registerBrowserPicker(domainCtx)
+export function apply(ctx: Context, config: DomainConfig): void {
+  const base: BrowserUseSettings = { headless: config.headless, browserType: config.browserType, browserPath: config.browserPath.trim() }
+  const report = (error: unknown) => ctx.logger.warn('browser-use: ' + String(error))
+  const switcher = new BackendSwitcher(base,
+    settings => settings.browserType === config.browserType ? config.backend : settings.browserType,
+    (backend, tool, execute) => ctx.tools.register(definition(backend, tool, config.toolCallTimeoutMs, execute)),
+  )
+  ctx.effect(() => () => switcher.close())
+  registerBrowserPicker(ctx)
+  ctx.on('agent/disposed', ({ agent }) => { void switcher.release(agent).catch(report) }, { global: true })
 
-    domainCtx.on('agent/disposed', ({ agent }) => { backend.release(agent) }, { global: true })
-    for (const tool of backend.tools()) domainCtx.tools.register(definition(backend, tool, config.toolCallTimeoutMs))
-
-    domainCtx.inject(['settings'], settingsCtx => {
-      const scope = settingsCtx.settings.register(SETTINGS_NAMESPACE, SettingsSchema, { base: current })
-      const descriptor = settingsCtx.settings.describe().find(item => item.ns === SETTINGS_NAMESPACE)
-      const user = descriptor?.user as Record<string, unknown> | undefined
-      const storedPath = typeof user?.browserPath === 'string' ? user.browserPath.trim() : ''
-      current = scope.get()
-      void backend.reconfigure(current).catch(error => domainCtx.logger.warn(`browser-use: settings configuration failed: ${String(error)}`))
-      settingsCtx.effect(() => scope.watch((next) => {
-        current = next
-        void backend.reconfigure(next).catch(error => domainCtx.logger.warn(`browser-use: reconfigure failed: ${String(error)}`))
-      }), 'browser-use: settings watcher')
-      if (detectedPath && storedPath === '') {
-        void scope.update({ browserPath: detectedPath }).catch(error => domainCtx.logger.warn(`browser-use: could not persist detected browser path: ${String(error)}`))
-      }
+  for (const name of new Set([config.backend, 'chrome', 'edge'])) {
+    ctx.inject([browserUseBackendServiceKey(name)], backendCtx => {
+      const backend = backendCtx.browserUse.backend.get(name)
+      backendCtx.effect(() => {
+        void switcher.attach(name, backend).catch(report)
+        return () => switcher.detach(name, backend).catch(report)
+      })
     })
-  })
-  return Promise.resolve(fiber).then(() => {})
-}
+  }
 
+  ctx.inject(['settings'], settingsCtx => {
+    const scope = settingsCtx.settings.register(SETTINGS_NAMESPACE, SettingsSchema, { base })
+    let tail: Promise<unknown> = Promise.resolve()
+    const applySettings = (next: BrowserUseSettings, prev?: BrowserUseSettings): Promise<void> => {
+      const pending = tail.then(async () => {
+        const settings = { ...next }
+        if (prev && next.browserType !== prev.browserType && next.browserPath === prev.browserPath && next.browserPath) {
+          settings.browserPath = ''
+          const current = scope.get()
+          if (current.browserType === next.browserType && current.browserPath === next.browserPath) await scope.update({ browserPath: '' })
+        }
+        if (!settings.browserPath.trim()) settings.browserPath = await discoverBrowserExecutable(settings.browserType) ?? ''
+        await switcher.configure(settings)
+      })
+      tail = pending.catch(() => {})
+      return pending
+    }
+    void applySettings(scope.get()).catch(report)
+    settingsCtx.effect(() => scope.watch((next, prev) => applySettings(next, prev)), 'browser-use: settings watcher')
+  })
+}

@@ -4,19 +4,17 @@
 
     - id: browser-use-chrome
       name: 'browser-use-chrome'
-      disabled: true
       config:
         toolCallTimeoutMs: 120000
 
     - id: browser-use-domain
       name: 'browser-use-domain'
       config:
-        backend: edge
+        backend: chrome
         headless: false
-        browserType: edge
+        browserType: chrome
         browserPath: ''
         toolCallTimeoutMs: 120000
 
     - id: browser-use-edge
       name: 'browser-use-edge'
-

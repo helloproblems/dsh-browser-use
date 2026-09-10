@@ -67,7 +67,7 @@ browser-use-domain ─┘  解析所选后端 ─> DSH 工具/设置
 - [Hub 参考](browser-use/README.md)：后端契约与注册表错误。
 - [Domain 参考](browser-use-domain/README.md)：工具命名、设置和生命周期行为。
 - [Chrome 后端参考](browser-use-chrome/README.md)：可执行文件发现与浏览器资源所有权。
-- Edge 已通过 Playwright MCP 实现。启用对应插件，并将 Domain 的 `backend` 和 `browserType` 同时设为 `edge` 后重启。
+- Edge 使用 Playwright MCP；启用两个后端插件后，可通过设置页热切换浏览器。
 
 ## 开发
 

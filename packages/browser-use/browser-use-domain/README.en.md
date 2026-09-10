@@ -29,15 +29,15 @@ Mount it with the Hub and at least one working backend:
     toolCallTimeoutMs: 120000
 ```
 
-The `backend` field is a registry identity. The Domain derives `browserUse.backend.<backend>`, waits for that service, then resolves the implementation through `ctx.browserUse.backend.get(backend)`.
+The `backend` field names the provider for the initial browser type. Domain watches the configured provider plus Chrome and Edge lifecycle services, selecting the active implementation from browser settings.
 
 ## Configuration
 
 | Field | Default | Meaning |
 |---|---|---|
-| `backend` | `chrome` | Registered backend selected for all browser tools |
+| `backend` | `chrome` | Registered backend for the initial browser type |
 | `headless` | `false` | Hide a browser window only when the backend launches one |
-| `browserType` | `chrome` / `edge` | Must match Domain backend; restart when switching backends |
+| `browserType` | `chrome` / `edge` | Selects the active backend at runtime |
 | `browserPath` | empty | Absolute browser executable path; an empty value is auto-detected at startup |
 | `toolCallTimeoutMs` | `120000` | Timeout applied to every DSH tool definition published by this Domain |
 
@@ -59,11 +59,11 @@ Backend output keeps the MCP-style `content` array and optional `structuredConte
 
 ## Settings behavior
 
-The Host registers settings namespace `browser-use` when `ctx.settings` is available. When no browser path is configured, it detects the selected browser's executable, uses that path as the resolved base, and persists it into the user settings layer. Changes are watched and forwarded to `backend.reconfigure(next)`. Initial configuration and later reconfiguration failures are logged as warnings; they do not remove the already registered tool catalog.
+The Host registers settings namespace `browser-use` when `ctx.settings` is available. Empty paths select automatic executable discovery without persisting the detected path. Browser-type changes replace the tool catalog; other changes reconfigure the active backend. Settings updates are serialized and failures are logged as warnings.
 
 The client module registers a settings section with:
 
-- Edge is available through Playwright MCP. Set Domain `backend: edge` and `browserType: edge`, enable its plugin, and restart.
+- Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
 - A headless-mode switch.
 - An editable browser executable path with a native file chooser.
 - Revision-aware replacement through the DSH settings remote API.
@@ -73,9 +73,9 @@ The file chooser starts from the entered path, or browser discovery when the pat
 ## Lifecycle
 
 1. The plugin injects `browserUse` and `tools`.
-2. It dynamically injects the selected backend lifecycle service.
+2. It watches the configured backend plus Chrome and Edge lifecycle services.
 3. After that service is available, it resolves the backend and sends the initial settings snapshot.
-4. It registers the backend's tool catalog once for that activation.
+4. Browser changes replace the tool catalog and release old sessions.
 5. A global `agent/disposed` listener calls `backend.release(agent)`.
 6. Backend package disposal remains responsible for unregistering and closing the complete backend.
 
@@ -103,7 +103,7 @@ This is the only package in the family that directly changes model capabilities.
 ## Known limitations
 
 - Backend selection is composition-time configuration and is not exposed as a live GUI setting.
-- Edge is available through Playwright MCP. Set Domain `backend: edge` and `browserType: edge`, enable its plugin, and restart.
+- Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
 - The backend tool catalog is captured once per activation; settings changes do not add or remove tools.
 - Reconfiguration failures are warnings rather than an unhealthy plugin state, so tools may stay registered while the backend cannot connect.
 - The text renderer ignores non-text content blocks; callers still receive the original structured tool value.
@@ -115,3 +115,9 @@ This is the only package in the family that directly changes model capabilities.
 - [Hub reference](../browser-use/README.en.md)
 - [Chrome backend reference](../browser-use-chrome/README.en.md)
 - [Repository guide](../../../README.en.md)
+
+## Backend hot switching
+
+Both Chrome and Edge providers stay mounted. The browser type setting selects the active tool catalog. Switching waits for current calls, unregisters old tools and releases old Agent sessions. Stale tool references fail explicitly. A missing or failing target leaves the previous catalog active and logs an error; mounting the selected provider retries activation. Saved settings are asynchronous, so saving does not confirm browser launch. The next tool call launches the selected browser. The `backend` configuration remains an alias for the initial browser type; other types resolve by name.
+
+Run the optional installed-browser round-trip test with `BROWSER_SWITCH_SMOKE=1`: it navigates in Edge, switches to Chrome, then switches back to Edge in one process.

@@ -6,7 +6,7 @@ Microsoft Edge backend using pinned `@playwright/mcp@0.0.80` and the official MC
 
 Initialization discovers the catalog using `tools/list` without launching a browser. Domain publishes `mcp__edge__browser_*` tools. Each Agent lazily gets an independent MCP connection and isolated browser session. `tools/call` preserves content blocks and structured results; MCP `isError` becomes an execution error.
 
-The shipped bundle selects Edge. Existing installations must update their composition and restart:
+The shipped bundle enables both backends and initially selects Chrome. Switch to Edge through settings; an Edge-only composition is shown below:
 
 ```yaml
 - name: browser-use
@@ -20,7 +20,7 @@ The shipped bundle selects Edge. Existing installations must update their compos
     toolCallTimeoutMs: 120000
 ```
 
-An empty path selects system Edge via the `msedge` channel. Stored user settings override defaults: check browser type and executable path after upgrading. The browser dropdown does not dynamically replace the backend; change Domain `backend` and `browserType` together and restart.
+An empty path selects system Edge. Changing browser type in settings clears the old path and switches backends without restarting. Stored user settings override bundle defaults.
 
 Agent disposal closes its session. Changes to path or headless settings recycle sessions; plugin disposal closes all connections. Calls and lifecycle operations are serialized, including calls from different Agents. MCP requests have a 120-second timeout; the Domain timeout is configured separately.
 

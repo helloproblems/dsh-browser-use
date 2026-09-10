@@ -110,7 +110,7 @@ The Hub registers no tools and injects no prompts, so it contributes zero direct
 
 - The Hub validates duplicate and missing registrations but does not validate backend names or compare a registry name with `backend.browserType`.
 - Tool catalogs are assumed stable for one Domain activation; dynamic catalog mutation is unsupported.
-- Edge is available through Playwright MCP. Set Domain `backend: edge` and `browserType: edge`, enable its plugin, and restart.
+- Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
 - Unregistering never closes a backend. Provider plugins must implement the lifecycle pattern above.
 
 ## Related documentation

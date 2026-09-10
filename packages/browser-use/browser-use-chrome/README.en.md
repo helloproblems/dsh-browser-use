@@ -39,7 +39,7 @@ Browser connection fields are defined by `browser-use-domain` and forwarded thro
 |---|---|
 | `headless` | Passed to the browser launch operation |
 | `browserPath` | Passed to Puppeteer as `executablePath` when non-empty |
-| `browserType` | `chrome` / `edge` | Must match Domain backend; restart when switching backends |
+| `browserType` | `chrome` / `edge` | Selects the active backend at runtime |
 
 The backend package schema also accepts `toolCallTimeoutMs` with default `120000`. This field is currently retained for composition compatibility but is not read by `ChromeBrowserUseBackend`; the effective registered tool timeout is `browser-use-domain.config.toolCallTimeoutMs`.
 
@@ -113,7 +113,7 @@ This backend supplies the tool names, descriptions, schemas, and results that th
 ## Known limitations
 
 - The implementation imports `chrome-devtools-mcp` internal `build/src` modules and is pinned to version `1.8.0`; upstream internal changes can break it.
-- Edge is available through Playwright MCP. Set Domain `backend: edge` and `browserType: edge`, enable its plugin, and restart.
+- Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
 - The upstream browser helper is process-global. Reconfiguration or closure calls `closeBrowser()` for that shared helper.
 - All owners share one browser connection and one backend mutex, so some operations may serialize.
 - Schema conversion is intentionally partial; unsupported Zod nodes degrade to an unconstrained schema.
