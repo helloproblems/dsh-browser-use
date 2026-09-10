@@ -9,7 +9,7 @@ const hostEntries = [
   [`${packageRoot}/browser-use/src/index.ts`, `${packageRoot}/browser-use/lib/index.js`],
   [`${packageRoot}/browser-use-chrome/src/index.ts`, `${packageRoot}/browser-use-chrome/lib/index.js`],
   [`${packageRoot}/browser-use-domain/src/index.ts`, `${packageRoot}/browser-use-domain/lib/index.js`],
-  [`${packageRoot}/browser-use-dege/src/index.ts`, `${packageRoot}/browser-use-dege/lib/index.js`],
+  [`${packageRoot}/browser-use-edge/src/index.ts`, `${packageRoot}/browser-use-edge/lib/index.js`],
 ]
 
 await Promise.all([

@@ -18,7 +18,7 @@ kind: "repository"
 | [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.zh.md) | `browser-use` | `ctx.browserUse` Hub、后端契约、注册表、生命周期服务键和稳定 Hub 错误 |
 | [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.zh.md) | `browser-use-domain` | 选择后端、注册 DSH 工具、释放 Agent 资源并管理浏览器设置 |
 | [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.zh.md) | `browser-use-chrome` | 基于 `chrome-devtools-mcp` 的 Chrome 后端，包括地址发现与 Agent 隔离上下文 |
-| [`packages/browser-use/browser-use-dege`](packages/browser-use/browser-use-dege/README.zh.md) | `browser-use-dege` | 面向未来 Edge 后端的禁用占位包；当前不是可工作的浏览器实现 |
+| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.zh.md) | `browser-use-edge` | 面向未来 Edge 后端的禁用占位包；当前不是可工作的浏览器实现 |
 
 依赖方向与各层所有权见 [browser-use 包组地图](packages/browser-use/README.zh.md)。
 
@@ -36,14 +36,14 @@ kind: "repository"
 
 ## Bundle
 
-根包名为 `dsh-browser-use`。其 [`cordis.patch.yml`](cordis.patch.yml) 默认挂载 Hub、Chrome 后端和 Domain，并保持未来的 Dege 后端禁用。
+根包名为 `dsh-browser-use`。其 [`cordis.patch.yml`](cordis.patch.yml) 默认挂载 Hub、Chrome 后端和 Domain，并保持未来的 Edge 后端禁用。
 
 | 行 | 默认状态 | 主要配置 |
 |---|---|---|
 | `browser-use` | 启用 | 无 |
 | `browser-use-chrome` | 启用 | `toolCallTimeoutMs: 120000` |
 | `browser-use-domain` | 启用 | 后端 `chrome`、显示 Chrome、自动发现、120 秒工具超时 |
-| `browser-use-dege` | 禁用 | 仅占位 |
+| `browser-use-edge` | 禁用 | 仅占位 |
 
 实际 DSH 工具超时由 Domain 配置拥有。浏览器连接设置同样由 Domain 管理，并转发给选中的后端。
 
@@ -116,13 +116,13 @@ dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh
 pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.3.0.tgz
 ```
 
-本地尚未发布的安装应使用 `pnpm pack:bundle`。普通 `pnpm pack` 会把 `workspace:^` 依赖改写为 registry 版本范围，因此只有配置的 registry 中已经存在匹配版本的 `browser-use`、`browser-use-domain`、`browser-use-chrome` 和 `browser-use-dege` 时，普通根包 tarball 才能安装。
+本地尚未发布的安装应使用 `pnpm pack:bundle`。普通 `pnpm pack` 会把 `workspace:^` 依赖改写为 registry 版本范围，因此只有配置的 registry 中已经存在匹配版本的 `browser-use`、`browser-use-domain`、`browser-use-chrome` 和 `browser-use-edge` 时，普通根包 tarball 才能安装。
 
 `pnpm dsh` 只在 `deepseek-harness` 源码根目录生效，因为该 package 定义了对应 script；它不能在本插件仓库中运行。添加、移除或更新 bundle 后，需要重启正在运行的 `web` profile。
 
 ## 已知限制
 
-- Chrome 是当前唯一可工作的后端。`browser-use-dege` 只注册空占位实现，并默认禁用。
+- Chrome 是当前唯一可工作的后端。`browser-use-edge` 只注册空占位实现，并默认禁用。
 - 共享设置契约目前把 `browserType` 固定为 `chrome`。
 - Chrome 实现依赖 `chrome-devtools-mcp@1.8.0` 的内部模块；升级该依赖时必须重新验证兼容性。
 - 浏览器状态只存在于当前进程，Host 重启后不会恢复。

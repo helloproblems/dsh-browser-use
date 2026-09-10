@@ -14,7 +14,7 @@
       "browser-use": ["packages/browser-use/browser-use/src/index.ts"],
       "browser-use-chrome": ["packages/browser-use/browser-use-chrome/src/index.ts"],
       "browser-use-domain": ["packages/browser-use/browser-use-domain/src/index.ts"],
-      "browser-use-dege": ["packages/browser-use/browser-use-dege/src/index.ts"]
+      "browser-use-edge": ["packages/browser-use/browser-use-edge/src/index.ts"]
     }
   },
   "include": ["packages/*/*/src", "packages/*/*/tests"]

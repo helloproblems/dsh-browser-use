@@ -18,7 +18,7 @@ English | [中文](README.zh.md)
 | [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.md) | `browser-use` | `ctx.browserUse` Hub, backend contracts, registry, lifecycle service keys, and stable Hub errors |
 | [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.md) | `browser-use-domain` | Selects a backend, registers DSH tools, releases per-agent resources, and owns browser settings |
 | [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.md) | `browser-use-chrome` | Chrome backend powered by `chrome-devtools-mcp`, including discovery and per-agent contexts |
-| [`packages/browser-use/browser-use-dege`](packages/browser-use/browser-use-dege/README.md) | `browser-use-dege` | Disabled placeholder for a future Edge backend; it is not a working browser implementation |
+| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.md) | `browser-use-edge` | Disabled placeholder for a future Edge backend; it is not a working browser implementation |
 
 See the [browser-use package group map](packages/browser-use/README.md) for dependency direction and layer ownership.
 
@@ -36,14 +36,14 @@ Cordis service availability controls activation. YAML row order is for readabili
 
 ## Bundle
 
-The root package is `dsh-browser-use`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Hub, Chrome backend, and Domain, while leaving the future Dege backend disabled.
+The root package is `dsh-browser-use`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Hub, Chrome backend, and Domain, while leaving the future Edge backend disabled.
 
 | Row | Default state | Important configuration |
 |---|---|---|
 | `browser-use` | enabled | none |
 | `browser-use-chrome` | enabled | `toolCallTimeoutMs: 120000` |
 | `browser-use-domain` | enabled | backend `chrome`, visible Chrome, automatic discovery, 120-second tool timeout |
-| `browser-use-dege` | disabled | placeholder only |
+| `browser-use-edge` | disabled | placeholder only |
 
 The effective DSH tool timeout is owned by the Domain configuration. Browser connection settings are also owned by the Domain and forwarded to the selected backend.
 
@@ -116,13 +116,13 @@ Or use the CLI from a `deepseek-harness` source checkout:
 pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.3.0.tgz
 ```
 
-Use `pnpm pack:bundle` for an unpublished local installation. A plain `pnpm pack` rewrites `workspace:^` dependencies to registry version ranges and therefore produces a root tarball that works only when the matching `browser-use`, `browser-use-domain`, `browser-use-chrome`, and `browser-use-dege` packages are available from the configured registry.
+Use `pnpm pack:bundle` for an unpublished local installation. A plain `pnpm pack` rewrites `workspace:^` dependencies to registry version ranges and therefore produces a root tarball that works only when the matching `browser-use`, `browser-use-domain`, `browser-use-chrome`, and `browser-use-edge` packages are available from the configured registry.
 
 `pnpm dsh` works in the `deepseek-harness` source root because that package defines the script; it does not work in this plugin repository. Restart a running `web` profile after adding, removing, or updating a bundle.
 
 ## Known limitations
 
-- Chrome is the only working backend. `browser-use-dege` registers an empty placeholder and is disabled by default.
+- Chrome is the only working backend. `browser-use-edge` registers an empty placeholder and is disabled by default.
 - The shared settings contract currently fixes `browserType` to `chrome`.
 - The Chrome implementation imports pinned internal modules from `chrome-devtools-mcp@1.8.0`; upgrading that dependency requires compatibility verification.
 - Browser state is process-local and is not restored after a Host restart.

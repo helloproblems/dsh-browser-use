@@ -14,9 +14,9 @@ importers:
       browser-use-chrome:
         specifier: workspace:^
         version: link:packages/browser-use/browser-use-chrome
-      browser-use-dege:
+      browser-use-edge:
         specifier: workspace:^
-        version: link:packages/browser-use/browser-use-dege
+        version: link:packages/browser-use/browser-use-edge
       browser-use-domain:
         specifier: workspace:^
         version: link:packages/browser-use/browser-use-domain
@@ -119,7 +119,7 @@ importers:
         specifier: ^3.18.2
         version: 3.18.2
 
-  packages/browser-use/browser-use-dege:
+  packages/browser-use/browser-use-edge:
     dependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2

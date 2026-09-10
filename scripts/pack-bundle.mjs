@@ -11,7 +11,7 @@ const packageDirectories = [
   'browser-use',
   'browser-use-chrome',
   'browser-use-domain',
-  'browser-use-dege',
+  'browser-use-edge',
 ]
 
 async function readJson(path) {

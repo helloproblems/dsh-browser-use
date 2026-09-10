@@ -1,30 +1,30 @@
 ---
-description: "Status and maintainer reference for the disabled browser-use-dege placeholder backend."
+description: "Status and maintainer reference for the disabled browser-use-edge placeholder backend."
 kind: "package-reference"
 ---
 
-# browser-use-dege
+# browser-use-edge
 
 English | [中文](README.zh.md)
 
 ## Summary
 
-`browser-use-dege` reserves a separate package and backend identity for a future Microsoft Edge implementation. It currently registers backend `dege` and lifecycle service `browserUse.backend.dege`, but exposes an empty tool catalog, allocates no browser resources, ignores settings, and rejects direct execution. The shipped `dsh-browser-use` bundle keeps it disabled.
+`browser-use-edge` reserves a separate package and backend identity for a future Microsoft Edge implementation. It currently registers backend `edge` and lifecycle service `browserUse.backend.edge`, but exposes an empty tool catalog, allocates no browser resources, ignores settings, and rejects direct execution. The shipped `dsh-browser-use` bundle keeps it disabled.
 
-The `dege` spelling is the current package and backend identity and is intentionally preserved for compatibility. This package must not be treated as a working Edge integration.
+This package must not be treated as a working Edge integration.
 
 ## Current behavior
 
 | Contract member | Current implementation |
 |---|---|
-| `browserType` | `dege` |
+| `browserType` | `edge` |
 | `tools()` | Returns an empty array |
 | `execute()` | Rejects with a placeholder error |
 | `release()` | No-op |
 | `reconfigure()` | Resolved no-op |
 | `close()` | Resolved no-op |
-| Registry identity | `dege` |
-| Lifecycle service | `browserUse.backend.dege` |
+| Registry identity | `edge` |
+| Lifecycle service | `browserUse.backend.edge` |
 
 If this backend is manually enabled and selected by `browser-use-domain`, the Domain activates successfully but registers no browser tools because the catalog is empty.
 
@@ -33,8 +33,8 @@ If this backend is manually enabled and selected by `browser-use-domain`, the Do
 The root patch declares the package but disables its row:
 
 ```yaml
-- id: browser-use-dege
-  name: browser-use-dege
+- id: browser-use-edge
+  name: browser-use-edge
   disabled: true
 ```
 

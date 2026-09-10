@@ -7,5 +7,5 @@ await Promise.all([
   rm(new URL(`${packageRoot}/browser-use/lib/`, root), { recursive: true, force: true }),
   rm(new URL(`${packageRoot}/browser-use-chrome/lib/`, root), { recursive: true, force: true }),
   rm(new URL(`${packageRoot}/browser-use-domain/lib/`, root), { recursive: true, force: true }),
-  rm(new URL(`${packageRoot}/browser-use-dege/lib/`, root), { recursive: true, force: true }),
+  rm(new URL(`${packageRoot}/browser-use-edge/lib/`, root), { recursive: true, force: true }),
 ])

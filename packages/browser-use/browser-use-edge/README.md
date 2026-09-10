@@ -1,30 +1,30 @@
 ---
-description: "已禁用的 browser-use-dege 占位后端状态与维护者参考。"
+description: "已禁用的 browser-use-edge 占位后端状态与维护者参考。"
 kind: "package-reference"
 ---
 
-# browser-use-dege
+# browser-use-edge
 
 [English](README.md) | 中文
 
 ## 概述
 
-`browser-use-dege` 为未来 Microsoft Edge 实现预留独立 package 与后端身份。它目前会注册后端 `dege` 和生命周期服务 `browserUse.backend.dege`，但只暴露空工具目录，不分配浏览器资源，忽略设置，并拒绝直接执行。内置 `dsh-browser-use` bundle 保持该包禁用。
+`browser-use-edge` 为未来 Microsoft Edge 实现预留独立 package 与后端身份。它目前会注册后端 `edge` 和生命周期服务 `browserUse.backend.edge`，但只暴露空工具目录，不分配浏览器资源，忽略设置，并拒绝直接执行。内置 `dsh-browser-use` bundle 保持该包禁用。
 
-`dege` 拼写是当前 package 与后端身份，为兼容性有意保留。本包不能被视为可工作的 Edge 集成。
+本包不能被视为可工作的 Edge 集成。
 
 ## 当前行为
 
 | 契约成员 | 当前实现 |
 |---|---|
-| `browserType` | `dege` |
+| `browserType` | `edge` |
 | `tools()` | 返回空数组 |
 | `execute()` | 以占位错误拒绝 |
 | `release()` | 空操作 |
 | `reconfigure()` | 已 resolve 的空操作 |
 | `close()` | 已 resolve 的空操作 |
-| 注册表身份 | `dege` |
-| 生命周期服务 | `browserUse.backend.dege` |
+| 注册表身份 | `edge` |
+| 生命周期服务 | `browserUse.backend.edge` |
 
 如果手动启用本后端并让 `browser-use-domain` 选择它，Domain 可以激活，但由于目录为空，不会注册任何浏览器工具。
 
@@ -33,8 +33,8 @@ kind: "package-reference"
 根 patch 声明了本包，但禁用其行：
 
 ```yaml
-- id: browser-use-dege
-  name: browser-use-dege
+- id: browser-use-edge
+  name: browser-use-edge
   disabled: true
 ```
 

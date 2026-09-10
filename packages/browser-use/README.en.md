@@ -18,13 +18,13 @@ The browser-use package group gives a DSH composition model-callable browser aut
 | [`browser-use`](browser-use/README.md) | Hub | Provides `ctx.browserUse`, backend contracts, and the named registry |
 | [`browser-use-domain`](browser-use-domain/README.md) | Domain | Publishes `mcp__<browser>__*` tools and the browser automation settings section |
 | [`browser-use-chrome`](browser-use-chrome/README.md) | Backend | Registers backend `chrome` and lifecycle service `browserUse.backend.chrome` |
-| [`browser-use-dege`](browser-use-dege/README.md) | Backend placeholder | Registers backend `dege`; disabled in the shipped bundle and exposes no tools |
+| [`browser-use-edge`](browser-use-edge/README.md) | Backend placeholder | Registers backend `edge`; disabled in the shipped bundle and exposes no tools |
 
 ## Dependency direction
 
 ```text
 browser-use-chrome ─┐
-browser-use-dege   ─┼─ register implementations ─> browser-use Hub
+browser-use-edge   ─┼─ register implementations ─> browser-use Hub
 browser-use-domain ─┘  resolve selected backend  ─> DSH tools/settings
 ```
 
@@ -67,7 +67,7 @@ This service-driven activation prevents registration races without making YAML r
 - [Hub reference](browser-use/README.md) for the backend contract and registry errors.
 - [Domain reference](browser-use-domain/README.md) for tool naming, settings, and lifecycle behavior.
 - [Chrome backend reference](browser-use-chrome/README.md) for executable discovery and browser ownership.
-- [Dege placeholder reference](browser-use-dege/README.md) for its intentionally non-functional status.
+- [Edge placeholder reference](browser-use-edge/README.md) for its intentionally non-functional status.
 
 ## Development
 

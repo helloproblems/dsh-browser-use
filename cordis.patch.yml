@@ -16,7 +16,7 @@
         browserPath: ''
         toolCallTimeoutMs: 120000
 
-    - id: browser-use-dege
-      name: 'browser-use-dege'
+    - id: browser-use-edge
+      name: 'browser-use-edge'
       disabled: true
 
