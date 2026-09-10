@@ -7,7 +7,7 @@ import {
   BROWSER_PICKER_HEADER,
   isSameOriginPickerRequest,
   pickBrowserExecutable,
-} from '../src/browser-picker.js'
+} from '../src/browser-picker.ts'
 
 const temporaryPaths: string[] = []
 

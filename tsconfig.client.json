@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.client.json",
+  "references": [
+    {
+      "path": "./packages/browser-use/browser-use-domain/tsconfig.client.json"
+    }
+  ],
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": ".cache/typecheck/client",
+    "tsBuildInfoFile": ".cache/typecheck/client.tsbuildinfo",
+    "noEmit": true,
+    "rewriteRelativeImportExtensions": false,
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "packages/*/*/tests/client/**/*.ts"
+  ]
+}

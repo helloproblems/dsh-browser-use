@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { browserUseBackendServiceKey, type BrowserUseBackend, type BrowserUseResult, type BrowserUseSettings, type BrowserUseTool } from 'browser-use'
-import { Config, type Config as ChromeConfig } from './config.js'
-import { connectChrome, type ChromeConnector, type ChromeRuntime } from './connection.js'
+import { Config, type Config as ChromeConfig } from './config.ts'
+import { connectChrome, type ChromeConnector, type ChromeRuntime } from './connection.ts'
 
 export const name = 'browser-use-chrome'
 export const inject = ['browserUse']
@@ -62,7 +62,7 @@ export class ChromeBrowserUseBackend implements BrowserUseBackend {
         const message = content.flatMap(item => item && typeof item === 'object' && !Array.isArray(item) && item.type === 'text' ? [String(item.text)] : []).join('\n')
         throw new Error(message || `${toolName} failed`)
       }
-      return { content, ...(result.structuredContent === undefined ? {} : { structuredContent: result.structuredContent as BrowserUseResult['structuredContent'] }) }
+      return { content, ...(result.structuredContent === undefined ? {} : { structuredContent: result.structuredContent as Exclude<BrowserUseResult['structuredContent'], undefined> }) }
     })
   }
 

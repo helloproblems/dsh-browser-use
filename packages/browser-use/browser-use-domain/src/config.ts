@@ -27,4 +27,3 @@ export const SettingsSchema: z<BrowserUseSettings> = z.object({
   browserType: z.union([z.const('chrome'), z.const('edge')]).default('chrome').description('Browser type'),
   browserPath: z.string().default('').description('Absolute path of the browser executable'),
 })
-

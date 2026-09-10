@@ -7,7 +7,7 @@ import BrowserUse, {
   browserUseBackendServiceKey,
   type BrowserUseBackend,
   type BrowserUseErrorCode,
-} from '../src/index.js'
+} from '../src/index.ts'
 
 function backend(type: string): BrowserUseBackend {
   return {

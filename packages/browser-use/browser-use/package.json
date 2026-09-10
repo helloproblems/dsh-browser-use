@@ -1,14 +1,21 @@
 {
   "name": "browser-use",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "Backend-neutral browser automation hub for DSH",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
     "./package.json": "./package.json"
   },
-  "files": ["lib", "README.md", "README.en.md"],
+  "files": [
+    "lib",
+    "README.md",
+    "README.en.md"
+  ],
   "license": "MIT",
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
@@ -17,5 +24,6 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/dsh-util-values": "0.1.5-alpha.1"
-  }
+  },
+  "types": "./lib/types/index.d.ts"
 }

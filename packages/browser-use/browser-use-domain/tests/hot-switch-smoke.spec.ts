@@ -3,11 +3,11 @@ import { once } from 'node:events'
 import { Context } from '@deepseek-ai/cordis'
 import { expect, it } from 'vitest'
 import type { BrowserUseBackend, BrowserUseSettings } from 'browser-use'
-import { BackendSwitcher } from '../src/backend-switcher.js'
+import { BackendSwitcher } from '../src/backend-switcher.ts'
 
 it.runIf(process.env.BROWSER_SWITCH_SMOKE === '1')('operates Edge, Chrome, then Edge without restarting the switcher', async () => {
-  const { EdgeBrowserUseBackend } = await import('../../browser-use-edge/src/index.js')
-  const { ChromeBrowserUseBackend } = await import('../../browser-use-chrome/src/index.js')
+  const { EdgeBrowserUseBackend } = await import('browser-use-edge')
+  const { ChromeBrowserUseBackend } = await import('browser-use-chrome')
   const edge = new EdgeBrowserUseBackend()
   const chrome = new ChromeBrowserUseBackend(() => settings('chrome'), new Context().logger, { toolCallTimeoutMs: 120000 })
   const tools = new Map<string, BrowserUseBackend['execute']>()

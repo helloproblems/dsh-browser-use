@@ -11,7 +11,7 @@ interface Active {
 /** Serializes calls with switches so sessions are never recycled mid-call. */
 export class BackendSwitcher {
   private available = new Map<string, BrowserUseBackend>()
-  private active?: Active
+  private active: Active | undefined
   private tail: Promise<unknown> = Promise.resolve()
   private stopped = false
   private closing?: Promise<void>

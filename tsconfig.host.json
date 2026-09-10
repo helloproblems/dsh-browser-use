@@ -1,0 +1,32 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": ".cache/typecheck/host",
+    "tsBuildInfoFile": ".cache/typecheck/host.tsbuildinfo",
+    "noEmit": true,
+    "rewriteRelativeImportExtensions": false,
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "packages/*/*/tests/**/*.ts",
+    "vitest.config.ts"
+  ],
+  "references": [
+    {
+      "path": "./packages/browser-use/browser-use/tsconfig.json"
+    },
+    {
+      "path": "./packages/browser-use/browser-use-chrome/tsconfig.json"
+    },
+    {
+      "path": "./packages/browser-use/browser-use-domain/tsconfig.host.json"
+    },
+    {
+      "path": "./packages/browser-use/browser-use-edge/tsconfig.json"
+    }
+  ],
+  "exclude": [
+    "packages/*/*/tests/client"
+  ]
+}

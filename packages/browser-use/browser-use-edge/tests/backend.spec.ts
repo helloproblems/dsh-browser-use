@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { describe, expect, it, vi } from 'vitest'
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { EdgeBrowserUseBackend } from '../src/index.js'
+import { EdgeBrowserUseBackend } from '../src/index.ts'
 
 const settings = { browserType: 'edge' as const, browserPath: '', headless: true }
 
@@ -24,7 +24,7 @@ describe('Edge MCP backend', () => {
         close: vi.fn(async () => {}),
         client: {
           listTools: vi.fn(async () => ({ tools: [{ name: 'action', inputSchema: { type: 'object' } }] })),
-          callTool: vi.fn(async ({ arguments: args }) => args.fail
+          callTool: vi.fn(async ({ arguments: args }: { arguments?: Record<string, unknown> | undefined }) => args?.fail
             ? { isError: true, content: [{ type: 'text', text: 'action failed' }] }
             : { content: [{ type: 'image', data: 'abc', mimeType: 'image/png' }], structuredContent: { ok: true } }),
         } as unknown as Client,
@@ -34,10 +34,10 @@ describe('Edge MCP backend', () => {
     })
     const backend = new EdgeBrowserUseBackend(connect, undefined, { toolCallTimeoutMs: 43210 })
     await backend.initialize()
-    expect(runtimes[0].close).toHaveBeenCalledOnce()
+    expect(runtimes[0]!.close).toHaveBeenCalledOnce()
     const a = {}, b = {}
     const result = await backend.execute(a, 'action', {})
-    expect(runtimes[1].client.callTool).toHaveBeenCalledWith({ name: 'action', arguments: {} }, undefined, { timeout: 43210 })
+    expect(runtimes[1]!.client.callTool).toHaveBeenCalledWith({ name: 'action', arguments: {} }, undefined, { timeout: 43210 })
     expect(result.structuredContent).toEqual({ ok: true })
     expect(result.content[0]).toMatchObject({ type: 'image' })
     await backend.execute(a, 'action', {})
@@ -46,16 +46,16 @@ describe('Edge MCP backend', () => {
     await expect(backend.execute(a, 'action', { fail: true })).rejects.toThrow('action failed')
     backend.release(a)
     await backend.execute(b, 'action', {})
-    expect(runtimes[1].close).toHaveBeenCalledOnce()
-    expect(runtimes[2].close).not.toHaveBeenCalled()
+    expect(runtimes[1]!.close).toHaveBeenCalledOnce()
+    expect(runtimes[2]!.close).not.toHaveBeenCalled()
     await backend.reconfigure(settings)
-    expect(runtimes[2].close).toHaveBeenCalledOnce()
+    expect(runtimes[2]!.close).toHaveBeenCalledOnce()
     await backend.execute(b, 'action', {})
     await backend.reconfigure(settings)
-    expect(runtimes[3].close).not.toHaveBeenCalled()
+    expect(runtimes[3]!.close).not.toHaveBeenCalled()
     await backend.close()
     await backend.close()
-    expect(runtimes[3].close).toHaveBeenCalledOnce()
+    expect(runtimes[3]!.close).toHaveBeenCalledOnce()
     await expect(backend.execute(a, 'action', {})).rejects.toThrow('disposed')
   })
 

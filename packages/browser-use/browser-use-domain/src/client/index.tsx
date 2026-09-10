@@ -1,15 +1,25 @@
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
+/** Browser settings section mounted in the DSH Client. */
+import type { RemoteResult, SettingsDescribeValue, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type { Context } from '@deepseek-ai/cordis'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Button, IconFolderOpenOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 
+import { readSettings, type BrowserType, type SettingsValue } from './settings.ts'
+
 const NS = 'browser-use'
 const PICKER_ENDPOINT = '/browser-use/pick-browser-executable'
 const PICKER_HEADER = 'x-dsh-browser-use-picker'
-type BrowserType = 'chrome' | 'edge'
-type SettingsValue = { headless: boolean; browserType: BrowserType; browserPath: string }
+// Only these two settings RPC methods are consumed by the editor.
+interface SettingsRemote {
+  settings: {
+    describe(): Promise<RemoteResult<SettingsDescribeValue>>
+    replace(ns: string, value: SettingsValue, expectedRevision: number): Promise<RemoteResult<SettingsNamespaceView>>
+  }
+}
+
+
 type View = { value: SettingsValue; revision: number }
 const row: CSSProperties = {
   display: 'grid',
@@ -74,19 +84,20 @@ function Switch({ checked, onChange }: { checked: boolean; onChange(value: boole
   )
 }
 
-function Section({ remote }: { remote: any }) {
+function Section({ remote }: { remote: SettingsRemote }) {
   const [view, setView] = useState<View | null>(null)
   const [draft, setDraft] = useState<SettingsValue | null>(null)
   const [saving, setSaving] = useState(false)
   const [picking, setPicking] = useState(false)
   const [error, setError] = useState('')
   useEffect(() => {
-    void remote.settings.describe().then((answer: any) => {
+    void remote.settings.describe().then((answer) => {
       if (!answer.ok) throw new Error(answer.error.message)
-      const found = answer.value.namespaces.find((item: any) => item.ns === NS)
+      const found = answer.value.namespaces.find((item) => item.ns === NS)
       if (!found) throw new Error('浏览器自动化设置不可用')
-      setView({ value: found.value, revision: found.revision })
-      setDraft(found.value)
+      const value = readSettings(found.value)
+      setView({ value, revision: found.revision })
+      setDraft(value)
     }).catch((cause: unknown) => { setError(String(cause)) })
   }, [remote])
   if (!draft || !view) {
@@ -99,8 +110,9 @@ function Section({ remote }: { remote: any }) {
       const next = { ...draft, browserPath: draft.browserPath.trim() }
       const answer = await remote.settings.replace(NS, next, view.revision)
       if (!answer.ok) { setError(answer.error.message); return }
-      setView({ value: answer.value.value, revision: answer.value.revision })
-      setDraft(answer.value.value)
+      const value = readSettings(answer.value.value)
+      setView({ value, revision: answer.value.revision })
+      setDraft(value)
     } catch (cause: unknown) {
       setError(String(cause))
     } finally {
@@ -179,5 +191,5 @@ function Section({ remote }: { remote: any }) {
 
 export const inject = ['slots', 'remote', 'remote.settings']
 export function apply(ctx: Context): void {
-  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'browser-use', order: 30, label: '浏览器自动化' }, () => <Section remote={(ctx as any).remote} />))
+  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'browser-use', order: 30, label: '浏览器自动化' }, () => <Section remote={ctx.remote} />))
 }

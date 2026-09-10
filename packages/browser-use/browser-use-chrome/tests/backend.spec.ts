@@ -2,8 +2,8 @@ import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
-import { ChromeBrowserUseBackend } from '../src/index.js'
-import { chromeServerArgs, type ChromeRuntime } from '../src/connection.js'
+import { ChromeBrowserUseBackend } from '../src/index.ts'
+import { chromeServerArgs, type ChromeRuntime } from '../src/connection.ts'
 
 const settings = { browserType: 'chrome' as const, browserPath: '', headless: true }
 function createBackend(connect?: ConstructorParameters<typeof ChromeBrowserUseBackend>[3]) {
@@ -42,7 +42,7 @@ describe('Chrome MCP', () => {
         closed: false,
         client: {
           listTools: vi.fn(async () => ({ tools: [{ name: 'action', inputSchema: { type: 'object' as const } }] })),
-          callTool: vi.fn(async ({ arguments: args }: any) => args.fail
+          callTool: vi.fn(async ({ arguments: args }: { arguments?: Record<string, unknown> | undefined }) => args?.fail
             ? { isError: true, content: [{ type: 'text' as const, text: 'server error' }] }
             : { content: [{ type: 'image' as const, data: 'abc', mimeType: 'image/png' }], structuredContent: { ok: true } }),
         },
@@ -54,22 +54,22 @@ describe('Chrome MCP', () => {
     const backend = createBackend(connect)
     const a = {}, b = {}
     await backend.initialize()
-    expect(runtimes[0].close).toHaveBeenCalledOnce()
+    expect(runtimes[0]!.close).toHaveBeenCalledOnce()
     expect(await backend.execute(a, 'action', {})).toMatchObject({ structuredContent: { ok: true }, content: [{ type: 'image' }] })
-    expect(runtimes[1].client.callTool).toHaveBeenCalledWith({ name: 'action', arguments: {} }, undefined, { timeout: 43210 })
+    expect(runtimes[1]!.client.callTool).toHaveBeenCalledWith({ name: 'action', arguments: {} }, undefined, { timeout: 43210 })
     await backend.execute(a, 'action', {})
     await backend.execute(b, 'action', {})
     expect(connect).toHaveBeenCalledTimes(3)
     await expect(backend.execute(a, 'action', { fail: true })).rejects.toThrow('server error')
-    Object.assign(runtimes[1], { closed: true })
+    Object.assign(runtimes[1]!, { closed: true })
     await backend.execute(a, 'action', {})
     expect(connect).toHaveBeenCalledTimes(4)
     backend.release(a)
     await backend.reconfigure(settings)
-    expect(runtimes[3].close).toHaveBeenCalledOnce()
-    expect(runtimes[2].close).not.toHaveBeenCalled()
+    expect(runtimes[3]!.close).toHaveBeenCalledOnce()
+    expect(runtimes[2]!.close).not.toHaveBeenCalled()
     await backend.reconfigure({ ...settings, headless: false })
-    expect(runtimes[2].close).toHaveBeenCalledOnce()
+    expect(runtimes[2]!.close).toHaveBeenCalledOnce()
     await backend.close()
     await backend.close()
     await expect(backend.execute(a, 'action', {})).rejects.toThrow('disposed')

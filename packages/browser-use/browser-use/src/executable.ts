@@ -3,8 +3,9 @@ import { access } from 'node:fs/promises'
 import { homedir, platform } from 'node:os'
 import { join } from 'node:path'
 
-export type BrowserType = 'chrome' | 'edge'
+import type { BrowserType } from './backend.ts'
 
+/** Discovery environment overrides; omitted fields use the current host. */
 export interface BrowserExecutableDiscoveryOptions {
   platformName?: NodeJS.Platform
   env?: NodeJS.ProcessEnv
@@ -65,6 +66,12 @@ function linuxCandidates(browserType: BrowserType, env: NodeJS.ProcessEnv): stri
   ])
 }
 
+/**
+ * List executable locations in platform search order.
+ * @param browserType - Browser installation to locate.
+ * @param options - Environment used to construct candidates.
+ * @returns Deduplicated candidate paths.
+ */
 export function browserExecutableCandidates(
   browserType: BrowserType,
   options: Omit<BrowserExecutableDiscoveryOptions, 'candidates' | 'accessImpl'> = {},
@@ -77,6 +84,12 @@ export function browserExecutableCandidates(
   return linuxCandidates(browserType, env)
 }
 
+/**
+ * Find the first accessible executable without launching it.
+ * @param browserType - Browser installation to locate.
+ * @param options - Search environment and optional accessibility probe.
+ * @returns First accessible candidate, or undefined when none are accessible.
+ */
 export async function discoverBrowserExecutable(
   browserType: BrowserType,
   options: BrowserExecutableDiscoveryOptions = {},
@@ -86,8 +99,11 @@ export async function discoverBrowserExecutable(
   for (const candidate of candidates) {
     try {
       await accessImpl(candidate, constants.X_OK)
-      return candidate
-    } catch {}
+    } catch {
+      // An inaccessible candidate does not prevent checking later installations.
+      continue
+    }
+    return candidate
   }
   return undefined
 }

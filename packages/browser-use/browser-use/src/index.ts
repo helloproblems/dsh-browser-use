@@ -5,14 +5,14 @@
  */
 
 import { Service, type Context } from '@deepseek-ai/cordis'
-import { BackendRegistry } from './registry.js'
+import { BackendRegistry } from './registry.ts'
 
-export type { BrowserType, BrowserUseBackend, BrowserUseResult, BrowserUseSettings, BrowserUseTool } from './backend.js'
-export { browserExecutableCandidates, discoverBrowserExecutable } from './executable.js'
-export type { BrowserExecutableDiscoveryOptions } from './executable.js'
-export { BrowserUseError } from './error.js'
-export type { BrowserUseErrorCode } from './error.js'
-export { BackendRegistry, BrowserUseBackendRegistry } from './registry.js'
+export type { BrowserType, BrowserUseBackend, BrowserUseResult, BrowserUseSettings, BrowserUseTool } from './backend.ts'
+export { browserExecutableCandidates, discoverBrowserExecutable } from './executable.ts'
+export type { BrowserExecutableDiscoveryOptions } from './executable.ts'
+export { BrowserUseError } from './error.ts'
+export type { BrowserUseErrorCode } from './error.ts'
+export { BackendRegistry, BrowserUseBackendRegistry } from './registry.ts'
 
 /**
  * Derive the lifecycle-only Cordis service published by a named backend. Domain

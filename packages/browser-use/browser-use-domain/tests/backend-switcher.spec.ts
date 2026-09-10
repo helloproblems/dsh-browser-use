@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { BrowserUseBackend, BrowserUseSettings } from 'browser-use'
-import { BackendSwitcher } from '../src/backend-switcher.js'
+import { BackendSwitcher } from '../src/backend-switcher.ts'
 
 const settings = (browserType: 'edge' | 'chrome'): BrowserUseSettings => ({ browserType, browserPath: '', headless: true })
 function backend(browserType: string): BrowserUseBackend {

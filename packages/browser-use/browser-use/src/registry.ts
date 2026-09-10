@@ -3,8 +3,8 @@
  * @module browser-use/src/registry
  */
 
-import type { BrowserUseBackend } from './backend.js'
-import { BrowserUseError } from './error.js'
+import type { BrowserUseBackend } from './backend.ts'
+import { BrowserUseError } from './error.ts'
 
 /**
  * Mutable name-to-backend table. Multiple implementations remain registered

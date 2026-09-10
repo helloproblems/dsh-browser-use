@@ -1,11 +1,14 @@
 {
   "name": "browser-use-chrome",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "Chrome backend for browser-use",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
-    ".": "./lib/index.js",
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -24,5 +27,6 @@
   },
   "devDependencies": {
     "@deepseek-ai/schemastery": "^3.18.2"
-  }
+  },
+  "types": "./lib/types/index.d.ts"
 }

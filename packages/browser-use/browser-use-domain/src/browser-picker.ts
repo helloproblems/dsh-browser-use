@@ -6,7 +6,7 @@ import { platform } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { discoverBrowserExecutable, type BrowserType } from 'browser-use'
-import { WINDOWS_PICKER_SCRIPT } from './windows-picker-script.js'
+import { WINDOWS_PICKER_SCRIPT } from './windows-picker-script.ts'
 
 export const BROWSER_PICKER_ENDPOINT = '/browser-use/pick-browser-executable'
 export const BROWSER_PICKER_HEADER = 'x-dsh-browser-use-picker'
@@ -190,7 +190,7 @@ function pickerHandler(request: IncomingMessage, response: ServerResponse): Prom
   const close = (): void => { if (!response.writableEnded) controller.abort() }
   request.once('aborted', abort)
   response.once('close', close)
-  return pickBrowserExecutable(browserType, controller.signal, { initialPath }).then(
+  return pickBrowserExecutable(browserType, controller.signal, initialPath ? { initialPath } : {}).then(
     path => { if (!response.destroyed) respondJson(response, 200, { path }) },
     (error: unknown) => {
       if (response.destroyed) return

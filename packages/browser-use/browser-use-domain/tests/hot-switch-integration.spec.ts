@@ -1,13 +1,15 @@
 import { Context } from '@deepseek-ai/cordis'
+import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { expect, it, vi } from 'vitest'
-import BrowserUse, { browserUseBackendServiceKey, type BrowserUseBackend, type BrowserUseSettings } from '../../browser-use/src/index.js'
-import { apply, inject } from '../src/index.js'
+import BrowserUse, { browserUseBackendServiceKey, type BrowserUseBackend, type BrowserUseSettings } from 'browser-use'
+import { apply, inject } from '../src/index.ts'
 
 it('wires settings changes to live Domain tool registrations without restarting', async () => {
   const ctx = new Context()
   await ctx.plugin(BrowserUse)
-  const definitions = new Map<string, any>()
-  ctx.provide('tools', { register: (tool: any) => { definitions.set(tool.name, tool); return () => definitions.delete(tool.name) } } as any)
+  const definitions = new Map<string, ToolDefinition>()
+  // Only the service methods consumed by Domain are needed in this fixture.
+  ctx.provide('tools', { register: (tool: ToolDefinition) => { definitions.set(tool.name, tool); return () => definitions.delete(tool.name) } } as unknown as Context['tools'])
   let value: BrowserUseSettings = { browserType: 'edge', browserPath: 'edge.exe', headless: true }
   let watcher: ((next: BrowserUseSettings, prev: BrowserUseSettings) => unknown) | undefined
   ctx.provide('settings', {
@@ -35,4 +37,3 @@ it('wires settings changes to live Domain tool registrations without restarting'
   await domain.dispose()
   await vi.waitFor(() => expect(definitions.size).toBe(0))
 })
-

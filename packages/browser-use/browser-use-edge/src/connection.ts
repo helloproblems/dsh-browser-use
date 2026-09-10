@@ -38,4 +38,3 @@ export async function connectEdge(settings: BrowserUseSettings, owner: object): 
     throw error
   }
 }
-

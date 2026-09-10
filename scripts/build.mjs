@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
@@ -6,16 +8,21 @@ const root = new URL('../', import.meta.url)
 const pathOf = value => fileURLToPath(value)
 const packageRoot = 'packages/browser-use'
 const hostEntries = [
-  [`${packageRoot}/browser-use/src/index.ts`, `${packageRoot}/browser-use/lib/index.js`],
-  [`${packageRoot}/browser-use-chrome/src/index.ts`, `${packageRoot}/browser-use-chrome/lib/index.js`],
-  [`${packageRoot}/browser-use-domain/src/index.ts`, `${packageRoot}/browser-use-domain/lib/index.js`],
-  [`${packageRoot}/browser-use-edge/src/index.ts`, `${packageRoot}/browser-use-edge/lib/index.js`],
+  [`${packageRoot}/browser-use/lib/types/index.js`, `${packageRoot}/browser-use/lib/index.js`],
+  [`${packageRoot}/browser-use-chrome/lib/types/index.js`, `${packageRoot}/browser-use-chrome/lib/index.js`],
+  [`${packageRoot}/browser-use-domain/lib/types/index.js`, `${packageRoot}/browser-use-domain/lib/index.js`],
+  [`${packageRoot}/browser-use-edge/lib/types/index.js`, `${packageRoot}/browser-use-edge/lib/index.js`],
 ]
 
 await Promise.all([
   rm(new URL('lib/', root), { recursive: true, force: true }),
   ...hostEntries.map(([, output]) => rm(new URL(output.replace(/index\.js$/, ''), root), { recursive: true, force: true })),
 ])
+
+const compiler = createRequire(import.meta.url).resolve('typescript/bin/tsc')
+const compiled = spawnSync(process.execPath, [compiler, '-b', 'tsconfig.host.json', 'tsconfig.client.json'], { cwd: pathOf(root), stdio: 'inherit' })
+if (compiled.error) throw compiled.error
+if (compiled.status !== 0) throw new Error(`TypeScript compilation failed with exit code ${compiled.status}`)
 
 await mkdir(new URL('lib/', root), { recursive: true })
 await writeFile(new URL('lib/index.js', root), '/** DSH bundle entry; runtime plugins are declared by cordis.patch.yml. */\nexport {}\n')
@@ -37,7 +44,7 @@ for (const [entry, output] of hostEntries) {
 const domainRoot = `${packageRoot}/browser-use-domain`
 const bodyUrl = new URL(`${domainRoot}/lib/client.body.cjs`, root)
 await build({
-  entryPoints: [pathOf(new URL(`${domainRoot}/src/client/index.tsx`, root))],
+  entryPoints: [pathOf(new URL(`${domainRoot}/lib/types/client/index.js`, root))],
   outfile: pathOf(bodyUrl),
   bundle: true,
   platform: 'browser',
