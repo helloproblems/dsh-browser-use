@@ -74,6 +74,8 @@ function outputPath(result: CommandResult): string | null {
 async function pickOnWindows(initialPath: string | undefined, signal: AbortSignal, run: CommandRunner): Promise<string | null> {
   const script = [
     '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8',
+    "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class BrowserPickerDpi { [DllImport(\"user32.dll\")] public static extern bool SetProcessDPIAware(); }'",
+    '[BrowserPickerDpi]::SetProcessDPIAware() | Out-Null',
     'Add-Type -AssemblyName System.Windows.Forms',
     '$dialog = New-Object System.Windows.Forms.OpenFileDialog',
     "$dialog.Title = 'Select browser executable'",
