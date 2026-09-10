@@ -1,6 +1,6 @@
 {
   "name": "browser-use-domain",
-  "version": "0.3.0",
+  "version": "0.4.2",
   "description": "Backend-routed browser automation domain for browser-use",
   "type": "module",
   "main": "lib/index.js",
