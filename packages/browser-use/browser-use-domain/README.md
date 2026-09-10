@@ -37,7 +37,7 @@ Domain 拥有工具名、工具超时、设置和 Agent 生命周期。它不连
 |---|---|---|
 | `backend` | `chrome` | 所有浏览器工具使用的已注册后端 |
 | `headless` | `false` | 仅在后端自行启动浏览器时隐藏窗口 |
-| `browserType` | `chrome` | 浏览器标识；GUI 可选择 Chrome，Edge 作为预留项保持禁用 |
+| `browserType` | `chrome` / `edge` | 须与 Domain backend 一致；切换后端需重启 |
 | `browserPath` | 空 | 浏览器可执行文件绝对路径；为空时启动阶段自动检索 |
 | `toolCallTimeoutMs` | `120000` | 应用于本 Domain 发布的每个 DSH 工具定义的超时 |
 
@@ -63,7 +63,7 @@ mcp__<backend.browserType>__<backend-tool-name>
 
 客户端模块注册的设置区域包含：
 
-- Chrome/Edge 下拉列表；Edge 后端可用前该选项保持禁用。
+- Edge 已通过 Playwright MCP 实现。启用对应插件，并将 Domain 的 `backend` 和 `browserType` 同时设为 `edge` 后重启。
 - 无头模式开关。
 - 可编辑的浏览器可执行文件位置与本机文件选择器。
 - 通过 DSH settings remote API 完成的 revision 感知替换。
@@ -103,7 +103,7 @@ mcp__<backend.browserType>__<backend-tool-name>
 ## 已知限制
 
 - 后端选择属于组合期配置，不作为实时 GUI 设置暴露。
-- `browserType` 已包含 Edge，但在可工作的 Edge 后端发布前，GUI 中该选项保持禁用。
+- Edge 已通过 Playwright MCP 实现。启用对应插件，并将 Domain 的 `backend` 和 `browserType` 同时设为 `edge` 后重启。
 - 后端工具目录在每次激活时只读取一次；设置变更不会增加或删除工具。
 - 重新配置失败只是 warning，而不是插件不健康状态，因此后端无法连接时工具仍可能保持注册。
 - 文本 renderer 忽略非文本内容块；调用方仍会收到原始结构化工具值。

@@ -18,7 +18,7 @@ kind: "repository"
 | [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.md) | `browser-use` | `ctx.browserUse` Hub、后端契约、注册表、生命周期服务键和稳定 Hub 错误 |
 | [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.md) | `browser-use-domain` | 选择后端、注册 DSH 工具、释放 Agent 资源并管理浏览器设置 |
 | [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.md) | `browser-use-chrome` | 基于 `chrome-devtools-mcp` 的 Chrome 后端，包括地址发现与 Agent 隔离上下文 |
-| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.md) | `browser-use-edge` | 面向未来 Edge 后端的禁用占位包；当前不是可工作的浏览器实现 |
+| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.md) | `browser-use-edge` | 基于 Playwright MCP 的 Edge 后端，按 Agent 隔离会话 |
 
 依赖方向与各层所有权见 [browser-use 包组地图](packages/browser-use/README.md)。
 
@@ -36,14 +36,14 @@ kind: "repository"
 
 ## Bundle
 
-根包名为 `dsh-browser-use`。其 [`cordis.patch.yml`](cordis.patch.yml) 默认挂载 Hub、Chrome 后端和 Domain，并保持未来的 Edge 后端禁用。
+根包名为 `dsh-browser-use`。其 [`cordis.patch.yml`](cordis.patch.yml) 默认挂载 Hub、Edge 后端和 Domain，Chrome 后端保留为可选项。
 
 | 行 | 默认状态 | 主要配置 |
 |---|---|---|
 | `browser-use` | 启用 | 无 |
-| `browser-use-chrome` | 启用 | `toolCallTimeoutMs: 120000` |
-| `browser-use-domain` | 启用 | 后端 `chrome`、显示 Chrome、自动发现、120 秒工具超时 |
-| `browser-use-edge` | 禁用 | 仅占位 |
+| `browser-use-chrome` | 禁用 | `toolCallTimeoutMs: 120000` |
+| `browser-use-domain` | 启用 | 后端 `edge`、显示 Edge、自动发现、120 秒工具超时 |
+| `browser-use-edge` | 启用 | Playwright MCP |
 
 实际 DSH 工具超时由 Domain 配置拥有。浏览器连接设置同样由 Domain 管理，并转发给选中的后端。
 
@@ -52,7 +52,7 @@ kind: "repository"
 - Node.js `^22.19.0` 或 `>=24.0.0`
 - pnpm `11.7.0`
 - 兼容的 DeepSeek Harness 安装
-- Google Chrome，或可访问的 Chrome 远程调试地址
+- Microsoft Edge；选择 Chrome 后端时需要 Google Chrome
 
 ## 开发
 
@@ -122,11 +122,11 @@ pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path
 
 ## 已知限制
 
-- Chrome 是当前唯一可工作的后端。`browser-use-edge` 只注册空占位实现，并默认禁用。
-- 共享设置契约目前把 `browserType` 固定为 `chrome`。
+- Edge 使用隔离会话，不接管日常浏览器窗口，不跨重启保留登录状态。
+- 切换浏览器须同步修改 Domain 的 `backend` 与 `browserType` 并重启；GUI 不会动态替换后端。
 - Chrome 实现依赖 `chrome-devtools-mcp@1.8.0` 的内部模块；升级该依赖时必须重新验证兼容性。
 - 浏览器状态只存在于当前进程，Host 重启后不会恢复。
-- 当前测试覆盖 Hub 注册表、Chrome 地址发现和 schema 转换，但 CI 不会启动真实浏览器。
+- 测试覆盖 MCP 工具发现与资源生命周期；设置 `EDGE_SMOKE=1` 可运行本机 Edge 导航、点击和会话隔离测试。
 
 ## 许可证
 

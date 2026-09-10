@@ -39,7 +39,7 @@ kind: "package-reference"
 |---|---|
 | `headless` | 传给浏览器启动操作 |
 | `browserPath` | 非空时作为 Puppeteer 的 `executablePath` |
-| `browserType` | 当前启用 Chrome；Edge 已预留但在设置页中禁用 |
+| `browserType` | `chrome` / `edge` | 须与 Domain backend 一致；切换后端需重启 |
 
 后端包 schema 也接受默认值为 `120000` 的 `toolCallTimeoutMs`。该字段目前为组合兼容性保留，但 `ChromeBrowserUseBackend` 不读取它；真正生效的工具超时是 `browser-use-domain.config.toolCallTimeoutMs`。
 
@@ -113,7 +113,7 @@ Owner 上下文创建失败时，其缓存 promise 会被移除，后续工具�
 ## 已知限制
 
 - 实现导入 `chrome-devtools-mcp` 的内部 `build/src` 模块，并固定在版本 `1.8.0`；上游内部变化可能造成破坏。
-- 可执行文件发现已覆盖常见 Edge 路径，但在完整 Edge 后端可用前，设置页仍禁用 Edge。
+- Edge 已通过 Playwright MCP 实现。启用对应插件，并将 Domain 的 `backend` 和 `browserType` 同时设为 `edge` 后重启。
 - 上游浏览器 helper 是进程全局单例；重新配置或关闭会对该共享 helper 调用 `closeBrowser()`。
 - 所有 owner 共用一个浏览器连接和一个后端 mutex，因此部分操作可能串行化。
 - Schema 转换有意只支持部分 Zod 节点；不支持的节点会退化为无约束 schema。

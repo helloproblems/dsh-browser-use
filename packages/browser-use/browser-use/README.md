@@ -110,7 +110,7 @@ Hub 不注册工具，也不注入提示词，因此不会直接增加任何请�
 
 - Hub 会检查重复和缺失注册，但不校验后端名称，也不比较注册名称与 `backend.browserType`。
 - 一个 Domain 激活周期内默认工具目录稳定；不支持动态修改目录。
-- `BrowserUseSettings` 已接受 Chrome 与 Edge 标识，但在可工作的 Edge 后端提供前，内置设置页仍禁用 Edge。
+- Edge 已通过 Playwright MCP 实现。启用对应插件，并将 Domain 的 `backend` 和 `browserType` 同时设为 `edge` 后重启。
 - 注销永远不会自动关闭后端。提供方插件必须实现上面的生命周期模式。
 
 ## 相关文档

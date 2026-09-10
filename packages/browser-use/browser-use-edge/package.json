@@ -1,11 +1,24 @@
 {
   "name": "browser-use-edge",
   "version": "0.4.3",
-  "description": "Reserved future Edge backend for browser-use",
+  "description": "Microsoft Edge backend using Playwright MCP",
   "type": "module",
   "main": "lib/index.js",
-  "exports": { ".": "./lib/index.js", "./package.json": "./package.json" },
-  "files": ["lib", "README.md", "README.en.md"],
-  "peerDependencies": { "browser-use": "workspace:^", "@deepseek-ai/cordis": "^4.0.2" }
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "README.md",
+    "README.en.md"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "browser-use": "workspace:^"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@playwright/mcp": "0.0.80"
+  }
 }
-

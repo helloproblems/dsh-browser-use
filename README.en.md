@@ -18,7 +18,7 @@ English | [中文](README.md)
 | [`packages/browser-use/browser-use`](packages/browser-use/browser-use/README.en.md) | `browser-use` | `ctx.browserUse` Hub, backend contracts, registry, lifecycle service keys, and stable Hub errors |
 | [`packages/browser-use/browser-use-domain`](packages/browser-use/browser-use-domain/README.en.md) | `browser-use-domain` | Selects a backend, registers DSH tools, releases per-agent resources, and owns browser settings |
 | [`packages/browser-use/browser-use-chrome`](packages/browser-use/browser-use-chrome/README.en.md) | `browser-use-chrome` | Chrome backend powered by `chrome-devtools-mcp`, including discovery and per-agent contexts |
-| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.en.md) | `browser-use-edge` | Disabled placeholder for a future Edge backend; it is not a working browser implementation |
+| [`packages/browser-use/browser-use-edge`](packages/browser-use/browser-use-edge/README.en.md) | `browser-use-edge` | Playwright MCP backend with isolated per-agent Edge sessions |
 
 See the [browser-use package group map](packages/browser-use/README.en.md) for dependency direction and layer ownership.
 
@@ -36,14 +36,14 @@ Cordis service availability controls activation. YAML row order is for readabili
 
 ## Bundle
 
-The root package is `dsh-browser-use`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Hub, Chrome backend, and Domain, while leaving the future Edge backend disabled.
+The root package is `dsh-browser-use`. Its [`cordis.patch.yml`](cordis.patch.yml) mounts the Hub, Edge backend, and Domain, with Chrome available as an optional backend.
 
 | Row | Default state | Important configuration |
 |---|---|---|
 | `browser-use` | enabled | none |
-| `browser-use-chrome` | enabled | `toolCallTimeoutMs: 120000` |
-| `browser-use-domain` | enabled | backend `chrome`, visible Chrome, automatic discovery, 120-second tool timeout |
-| `browser-use-edge` | disabled | placeholder only |
+| `browser-use-chrome` | disabled | `toolCallTimeoutMs: 120000` |
+| `browser-use-domain` | enabled | backend `edge`, visible Edge, automatic discovery, 120-second tool timeout |
+| `browser-use-edge` | enabled | Playwright MCP |
 
 The effective DSH tool timeout is owned by the Domain configuration. Browser connection settings are also owned by the Domain and forwarded to the selected backend.
 
@@ -52,7 +52,7 @@ The effective DSH tool timeout is owned by the Domain configuration. Browser con
 - Node.js `^22.19.0` or `>=24.0.0`
 - pnpm `11.7.0`
 - A compatible DeepSeek Harness installation
-- Google Chrome, or a reachable Chrome remote-debugging endpoint
+- Microsoft Edge, or Google Chrome when selecting the Chrome backend
 
 ## Development
 
@@ -122,11 +122,11 @@ Use `pnpm pack:bundle` for an unpublished local installation. A plain `pnpm pack
 
 ## Known limitations
 
-- Chrome is the only working backend. `browser-use-edge` registers an empty placeholder and is disabled by default.
-- The shared settings contract currently fixes `browserType` to `chrome`.
+- Edge uses isolated sessions; it does not attach to everyday browser windows or persist logins across restarts.
+- Switching browsers requires matching Domain `backend` and `browserType` values and a restart; the GUI does not replace backends dynamically.
 - The Chrome implementation imports pinned internal modules from `chrome-devtools-mcp@1.8.0`; upgrading that dependency requires compatibility verification.
 - Browser state is process-local and is not restored after a Host restart.
-- The current test suite covers the Hub registry, Chrome discovery, and schema conversion, but does not launch a real browser in CI.
+- Tests cover MCP discovery and lifecycle. Set `EDGE_SMOKE=1` to test navigation, clicking and session isolation in installed Edge.
 
 ## License
 

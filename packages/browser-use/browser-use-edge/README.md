@@ -1,80 +1,37 @@
----
-description: "已禁用的 browser-use-edge 占位后端状态与维护者参考。"
-kind: "package-reference"
----
-
 # browser-use-edge
 
 [English](README.en.md) | 中文
 
-## 概述
+通过官方 `@playwright/mcp@0.0.80` 和 MCP SDK 接入 Microsoft Edge。使用公开 `createConnection()` API 与 `InMemoryTransport` 交换 MCP 消息，无需子进程、调试端口或单独配置 MCP 服务。
 
-`browser-use-edge` 为未来 Microsoft Edge 实现预留独立 package 与后端身份。它目前会注册后端 `edge` 和生命周期服务 `browserUse.backend.edge`，但只暴露空工具目录，不分配浏览器资源，忽略设置，并拒绝直接执行。内置 `dsh-browser-use` bundle 保持该包禁用。
+初始化时通过 `tools/list` 获取稳定工具目录，不启动浏览器。Domain 发布 `mcp__edge__browser_*` 工具；首次调用时才启动 Edge。每个 Agent 拥有独立 MCP 连接与隔离浏览器会话。工具调用使用 `tools/call`，保留内容块和结构化结果，将 MCP `isError` 转为执行错误。
 
-本包不能被视为可工作的 Edge 集成。
-
-## 当前行为
-
-| 契约成员 | 当前实现 |
-|---|---|
-| `browserType` | `edge` |
-| `tools()` | 返回空数组 |
-| `execute()` | 以占位错误拒绝 |
-| `release()` | 空操作 |
-| `reconfigure()` | 已 resolve 的空操作 |
-| `close()` | 已 resolve 的空操作 |
-| 注册表身份 | `edge` |
-| 生命周期服务 | `browserUse.backend.edge` |
-
-如果手动启用本后端并让 `browser-use-domain` 选择它，Domain 可以激活，但由于目录为空，不会注册任何浏览器工具。
-
-## Bundle 状态
-
-根 patch 声明了本包，但禁用其行：
+默认 bundle 已启用 Edge。已有安装需更新 bundle 配置并重启：
 
 ```yaml
-- id: browser-use-edge
-  name: browser-use-edge
-  disabled: true
+- name: browser-use
+- name: browser-use-edge
+- name: browser-use-domain
+  config:
+    backend: edge
+    browserType: edge
+    headless: false
+    browserPath: ''
+    toolCallTimeoutMs: 120000
 ```
 
-在它真正拥有 Edge 连接、工具目录、owner 上下文和清理行为之前，用户组合也应保持禁用。
+空路径使用系统 Edge（`msedge` channel）；也可指定 Edge 可执行文件。已有用户设置可能覆盖 bundle 默认值，升级后请确认浏览器类型和路径。浏览器下拉框不会替换后端，切换后端须同步修改 Domain `backend` 并重启。
 
-## 预期实现边界
+Agent 销毁关闭该 Agent 的会话；实际路径或 headless 设置变化会回收所有会话；插件销毁关闭所有连接。生命周期与工具执行串行化，避免执行中途清理；目前不同 Agent 的工具调用也串行执行。MCP 单次请求上限为 120 秒，Domain 超时独立配置。
 
-未来实现应保持在现有后端契约内：
+工作目录通过 MCP roots 传递。启用上游 core 工具；截图内容块保留，但现有 Domain UI 摘要只渲染文字。当前不提供扩展/CDP 接管模式，不保存跨重启登录状态。依赖版本已固定，升级须重跑兼容性测试。
 
-1. 构建稳定且兼容 Edge 的工具目录。
-2. 连接或启动 Edge，不把浏览器 IO 放进 Hub 或 Domain。
-3. 按不透明 owner 对象隔离运行时状态。
-4. 通过 `release(owner)` 释放单个 owner 的状态。
-5. 通过 `reconfigure(settings)` 应用 Domain 设置。
-6. 插件销毁时先注销，再关闭全部资源。
+```powershell
+pnpm typecheck
+pnpm test
+$env:EDGE_SMOKE='1'
+pnpm test
+pnpm build
+```
 
-如果 Edge 需要当前 Chrome 形状 `BrowserUseSettings` 无法表达的设置，应显式演进共享 Hub 契约与 Domain 设置 schema，而不是增加隐藏的后端私有行为。
-
-## 实现地图
-
-| 文件 | 职责 |
-|---|---|
-| [`src/index.ts`](src/index.ts) | 占位后端类、Hub 注册和生命周期服务发布 |
-
-## 模型体验
-
-内置 bundle 中本包禁用，因此没有模型体验。即使手动启用并选中，空目录也会使 Domain 不注册工具，并且不会注入任何提示词文本。
-
-## 已知限制
-
-- 不会启动或连接 Edge 进程。
-- 没有任何浏览器工具。
-- 直接执行始终拒绝。
-- 设置与 owner 生命周期调用都是空操作。
-- 当前没有本包专属测试。
-
-## 相关文档
-
-- [包组地图](../README.md)
-- [Hub 后端契约](../browser-use/README.md)
-- [Domain 参考](../browser-use-domain/README.md)
-- [可工作的 Chrome 后端](../browser-use-chrome/README.md)
-- [仓库指南](../../../README.md)
+普通测试检查真实 MCP 工具目录和模拟会话生命周期。`EDGE_SMOKE=1` 额外启动本机无头 Edge，验证本地页面导航、点击和 Agent 存储隔离。

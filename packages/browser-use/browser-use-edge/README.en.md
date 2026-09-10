@@ -1,80 +1,29 @@
----
-description: "Status and maintainer reference for the disabled browser-use-edge placeholder backend."
-kind: "package-reference"
----
-
 # browser-use-edge
 
 English | [中文](README.md)
 
-## Summary
+Microsoft Edge backend using pinned `@playwright/mcp@0.0.80` and the official MCP SDK. The public `createConnection()` API and `InMemoryTransport` exchange real MCP messages without subprocesses or listening ports.
 
-`browser-use-edge` reserves a separate package and backend identity for a future Microsoft Edge implementation. It currently registers backend `edge` and lifecycle service `browserUse.backend.edge`, but exposes an empty tool catalog, allocates no browser resources, ignores settings, and rejects direct execution. The shipped `dsh-browser-use` bundle keeps it disabled.
+Initialization discovers the catalog using `tools/list` without launching a browser. Domain publishes `mcp__edge__browser_*` tools. Each Agent lazily gets an independent MCP connection and isolated browser session. `tools/call` preserves content blocks and structured results; MCP `isError` becomes an execution error.
 
-This package must not be treated as a working Edge integration.
-
-## Current behavior
-
-| Contract member | Current implementation |
-|---|---|
-| `browserType` | `edge` |
-| `tools()` | Returns an empty array |
-| `execute()` | Rejects with a placeholder error |
-| `release()` | No-op |
-| `reconfigure()` | Resolved no-op |
-| `close()` | Resolved no-op |
-| Registry identity | `edge` |
-| Lifecycle service | `browserUse.backend.edge` |
-
-If this backend is manually enabled and selected by `browser-use-domain`, the Domain activates successfully but registers no browser tools because the catalog is empty.
-
-## Bundle status
-
-The root patch declares the package but disables its row:
+The shipped bundle selects Edge. Existing installations must update their composition and restart:
 
 ```yaml
-- id: browser-use-edge
-  name: browser-use-edge
-  disabled: true
+- name: browser-use
+- name: browser-use-edge
+- name: browser-use-domain
+  config:
+    backend: edge
+    browserType: edge
+    headless: false
+    browserPath: ''
+    toolCallTimeoutMs: 120000
 ```
 
-Keep it disabled in user compositions until it owns a real Edge connection, tool catalog, owner contexts, and cleanup behavior.
+An empty path selects system Edge via the `msedge` channel. Stored user settings override defaults: check browser type and executable path after upgrading. The browser dropdown does not dynamically replace the backend; change Domain `backend` and `browserType` together and restart.
 
-## Intended implementation boundary
+Agent disposal closes its session. Changes to path or headless settings recycle sessions; plugin disposal closes all connections. Calls and lifecycle operations are serialized, including calls from different Agents. MCP requests have a 120-second timeout; the Domain timeout is configured separately.
 
-A future implementation should stay within the existing backend contract:
+Workspace paths are sent via MCP roots. Core tools are enabled. Screenshot blocks are preserved, though the existing Domain UI summary only renders text. This integration does not attach through extensions/CDP or persist logins across restarts. Revalidate compatibility when upgrading dependencies.
 
-1. Build a stable Edge-compatible tool catalog.
-2. Connect to or launch Edge without adding browser IO to the Hub or Domain.
-3. Isolate runtime state by opaque owner object.
-4. Release one owner's state through `release(owner)`.
-5. Apply Domain settings through `reconfigure(settings)`.
-6. Unregister before closing all resources during plugin disposal.
-
-If Edge requires settings that cannot be represented by the current Chrome-shaped `BrowserUseSettings`, evolve the shared Hub contract and Domain settings schema explicitly rather than adding hidden backend-only behavior.
-
-## Implementation map
-
-| File | Responsibility |
-|---|---|
-| [`src/index.ts`](src/index.ts) | Placeholder backend class, Hub registration, and lifecycle service publication |
-
-## Model experience
-
-None in the shipped bundle because the package is disabled. Even when manually enabled and selected, its empty catalog causes the Domain to register no tools and inject no prompt text.
-
-## Known limitations
-
-- No Edge process is launched or connected.
-- No browser tools are available.
-- Direct execution always rejects.
-- Settings and owner lifecycle calls are no-ops.
-- There are no package-specific tests yet.
-
-## Related documentation
-
-- [Package group map](../README.en.md)
-- [Hub backend contract](../browser-use/README.en.md)
-- [Domain reference](../browser-use-domain/README.en.md)
-- [Working Chrome backend](../browser-use-chrome/README.en.md)
-- [Repository guide](../../../README.en.md)
+Run `pnpm typecheck`, `pnpm test`, and `pnpm build`. Set `EDGE_SMOKE=1` for the optional installed-Edge test covering local-page navigation, clicks and per-Agent storage isolation. Ordinary tests exercise real MCP tool discovery and mocked lifecycle behavior.

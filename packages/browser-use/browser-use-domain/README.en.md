@@ -37,7 +37,7 @@ The `backend` field is a registry identity. The Domain derives `browserUse.backe
 |---|---|---|
 | `backend` | `chrome` | Registered backend selected for all browser tools |
 | `headless` | `false` | Hide a browser window only when the backend launches one |
-| `browserType` | `chrome` | Browser identity; Chrome is selectable and Edge is reserved but disabled in the GUI |
+| `browserType` | `chrome` / `edge` | Must match Domain backend; restart when switching backends |
 | `browserPath` | empty | Absolute browser executable path; an empty value is auto-detected at startup |
 | `toolCallTimeoutMs` | `120000` | Timeout applied to every DSH tool definition published by this Domain |
 
@@ -63,7 +63,7 @@ The Host registers settings namespace `browser-use` when `ctx.settings` is avail
 
 The client module registers a settings section with:
 
-- A Chrome/Edge dropdown whose Edge option is disabled until its backend is available.
+- Edge is available through Playwright MCP. Set Domain `backend: edge` and `browserType: edge`, enable its plugin, and restart.
 - A headless-mode switch.
 - An editable browser executable path with a native file chooser.
 - Revision-aware replacement through the DSH settings remote API.
@@ -103,7 +103,7 @@ This is the only package in the family that directly changes model capabilities.
 ## Known limitations
 
 - Backend selection is composition-time configuration and is not exposed as a live GUI setting.
-- Edge is represented in `browserType` but remains disabled in the GUI until a working Edge backend ships.
+- Edge is available through Playwright MCP. Set Domain `backend: edge` and `browserType: edge`, enable its plugin, and restart.
 - The backend tool catalog is captured once per activation; settings changes do not add or remove tools.
 - Reconfiguration failures are warnings rather than an unhealthy plugin state, so tools may stay registered while the backend cannot connect.
 - The text renderer ignores non-text content blocks; callers still receive the original structured tool value.

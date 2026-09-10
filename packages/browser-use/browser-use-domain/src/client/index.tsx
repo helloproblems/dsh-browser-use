@@ -138,7 +138,7 @@ function Section({ remote }: { remote: any }) {
         onChange={event => { setDraft({ ...draft, browserType: event.target.value as BrowserType }) }}
       >
         <option value="chrome">Google Chrome</option>
-        <option value="edge" disabled>Microsoft Edge（暂不可用）</option>
+        <option value="edge">Microsoft Edge</option>
       </select>
     </div>
     <div style={row}>
