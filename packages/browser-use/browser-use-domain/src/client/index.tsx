@@ -6,7 +6,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Button, IconFolderOpenOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 
-import { readSettings, type BrowserType, type SettingsValue } from './settings.ts'
+import { browserPathError, readSettings, type BrowserType, type SettingsValue } from './settings.ts'
 
 const NS = 'browser-use'
 const PICKER_ENDPOINT = '/browser-use/pick-browser-executable'
@@ -91,19 +91,24 @@ function Section({ remote }: { remote: SettingsRemote }) {
   const [picking, setPicking] = useState(false)
   const [error, setError] = useState('')
   useEffect(() => {
+    let active = true
     void remote.settings.describe().then((answer) => {
+      if (!active) return
       if (!answer.ok) throw new Error(answer.error.message)
       const found = answer.value.namespaces.find((item) => item.ns === NS)
       if (!found) throw new Error('浏览器自动化设置不可用')
       const value = readSettings(found.value)
       setView({ value, revision: found.revision })
       setDraft(value)
-    }).catch((cause: unknown) => { setError(String(cause)) })
+    }).catch((cause: unknown) => { if (active) setError(String(cause)) })
+    return () => { active = false }
   }, [remote])
   if (!draft || !view) {
     return <div style={{ padding: '20px 0', color: 'var(--dsw-alias-label-secondary, var(--dsh-text-secondary))' }}>{error || '正在读取设置...'}</div>
   }
+  const validationError = browserPathError(draft)
   const save = async () => {
+    if (browserPathError(draft)) return
     setSaving(true)
     setError('')
     try {
@@ -147,7 +152,8 @@ function Section({ remote }: { remote: SettingsRemote }) {
         aria-label="浏览器类型"
         value={draft.browserType}
         style={{ ...input, ...control }}
-        onChange={event => { setDraft({ ...draft, browserType: event.target.value as BrowserType, browserPath: '' }) }}
+        disabled={saving || picking}
+        onChange={event => { setDraft({ ...draft, browserType: event.target.value as BrowserType }) }}
       >
         <option value="chrome">Google Chrome</option>
         <option value="edge">Microsoft Edge</option>
@@ -165,6 +171,8 @@ function Section({ remote }: { remote: SettingsRemote }) {
         <input
           aria-label="浏览器位置"
           value={draft.browserPath}
+          aria-invalid={!!validationError}
+          aria-describedby={validationError ? 'browser-path-error' : undefined}
           placeholder="自动检索所选浏览器"
           style={input}
           onChange={event => { setDraft({ ...draft, browserPath: event.target.value }) }}
@@ -182,14 +190,17 @@ function Section({ remote }: { remote: SettingsRemote }) {
         </Button>
       </div>
     </div>
+    {validationError ? <p id="browser-path-error" role="alert" style={{ color: 'var(--dsh-color-danger, #c93c37)', fontSize: 12 }}>{validationError}</p> : null}
     {error ? <p role="alert" style={{ color: 'var(--dsh-color-danger, #c93c37)', fontSize: 12 }}>{error}</p> : null}
     <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 20 }}>
-      <Button variant="primary" disabled={saving || picking} onClick={() => { void save() }}>{saving ? '正在保存...' : '保存'}</Button>
+      <Button variant="primary" disabled={saving || picking || !!validationError} onClick={() => { void save() }}>{saving ? '正在保存...' : '保存'}</Button>
     </div>
   </div>
 }
 
 export const inject = ['slots', 'remote', 'remote.settings']
 export function apply(ctx: Context): void {
-  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'browser-use', order: 30, label: '浏览器自动化' }, () => <Section remote={ctx.remote} />))
+  // Guarded context service reads can return a new proxy on every render.
+  const remote = ctx.remote
+  ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'browser-use', order: 30, label: '浏览器自动化' }, () => <Section remote={remote} />))
 }

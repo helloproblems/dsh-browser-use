@@ -34,6 +34,13 @@ it('wires settings changes to live Domain tool registrations without restarting'
   value = { ...value, browserType: 'chrome', browserPath: 'chrome.exe' }
   await watcher!(value, prev)
   expect([...definitions.keys()]).toEqual(['mcp__chrome__action'])
+  // A type-only change must preserve an explicitly configured executable.
+  const beforeTypeChange = value
+  value = { ...value, browserType: 'edge' }
+  await watcher!(value, beforeTypeChange)
+  expect(value.browserPath).toBe('chrome.exe')
+  expect(ctx.browserUse.backend.get('edge').reconfigure).toHaveBeenLastCalledWith(value)
+  expect([...definitions.keys()]).toEqual(['mcp__edge__action'])
   await domain.dispose()
   await vi.waitFor(() => expect(definitions.size).toBe(0))
 })

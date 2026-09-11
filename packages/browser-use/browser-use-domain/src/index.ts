@@ -69,14 +69,9 @@ export function apply(ctx: Context, config: DomainConfig): void {
   ctx.inject(['settings'], settingsCtx => {
     const scope = settingsCtx.settings.register(SETTINGS_NAMESPACE, SettingsSchema, { base })
     let tail: Promise<unknown> = Promise.resolve()
-    const applySettings = (next: BrowserUseSettings, prev?: BrowserUseSettings): Promise<void> => {
+    const applySettings = (next: BrowserUseSettings): Promise<void> => {
       const pending = tail.then(async () => {
         const settings = { ...next }
-        if (prev && next.browserType !== prev.browserType && next.browserPath === prev.browserPath && next.browserPath) {
-          settings.browserPath = ''
-          const current = scope.get()
-          if (current.browserType === next.browserType && current.browserPath === next.browserPath) await scope.update({ browserPath: '' })
-        }
         if (!settings.browserPath.trim()) settings.browserPath = await discoverBrowserExecutable(settings.browserType) ?? ''
         await switcher.configure(settings)
       })
@@ -84,6 +79,6 @@ export function apply(ctx: Context, config: DomainConfig): void {
       return pending
     }
     void applySettings(scope.get()).catch(report)
-    settingsCtx.effect(() => scope.watch((next, prev) => applySettings(next, prev)), 'browser-use: settings watcher')
+    settingsCtx.effect(() => scope.watch(next => applySettings(next)), 'browser-use: settings watcher')
   })
 }
