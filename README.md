@@ -69,6 +69,8 @@ pnpm pack:bundle
 
 workspace 模式为 `packages/*/*`。测试跟随所属 package 存放，`scripts/build.mjs` 会生成四个 Host bundle 和 Domain 客户端模块。`pnpm pack --dry-run` 只预览普通 package 内容，不会生成文件。
 
+TypeScript 工程布局、源码测试和构建流程见[开发指南](docs/development)。
+
 ## 安装到 DSH
 
 本仓库不提供 `dsh` 可执行文件。插件管理要求 `PATH` 中存在 pnpm，并且已经安装 DSH CLI，或者准备好一个可从源码运行的 `deepseek-harness` checkout。

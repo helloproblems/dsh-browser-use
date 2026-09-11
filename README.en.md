@@ -69,6 +69,8 @@ pnpm pack:bundle
 
 The workspace pattern is `packages/*/*`. Tests live with their owning package, and `scripts/build.mjs` emits the four Host bundles plus the Domain client module. `pnpm pack --dry-run` only previews the regular package contents and creates no file.
 
+See the [development guide](docs/development.en.md) for TypeScript project layout, source tests, and the build pipeline.
+
 ## Install into DSH
 
 This repository does not provide the `dsh` executable. Plugin management requires pnpm on `PATH` plus either an installed DSH CLI or a prepared `deepseek-harness` source checkout.

@@ -28,6 +28,8 @@
     "cordis.patch.yml",
     "README.md",
     "README.en.md",
+    "docs/development.en.md",
+    "docs/development.md",
     "LICENSE"
   ],
   "license": "MIT",

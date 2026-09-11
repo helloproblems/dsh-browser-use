@@ -1,12 +1,12 @@
 import {spawnSync} from 'node:child_process'
-import {cp, mkdir, readFile, rm, writeFile} from 'node:fs/promises'
-import {resolve} from 'node:path'
+import {cp, mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {basename, dirname, join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const packageRoot = resolve(root, 'packages/browser-use')
 const output = resolve(root, '.artifacts/pack')
-const stage = resolve(output, '.stage')
 const packageDirectories = [
     'browser-use',
     'browser-use-chrome',
@@ -64,37 +64,51 @@ const packages = await Promise.all(packageDirectories.map(async (directory) => {
 const versions = new Map(packages.map(({manifest}) => [manifest.name, manifest.version]))
 
 await rm(output, {recursive: true, force: true})
-await mkdir(resolve(stage, 'lib'), {recursive: true})
-await mkdir(resolve(stage, 'node_modules'), {recursive: true})
+await mkdir(output, {recursive: true})
+// Keep pnpm's dependency walk away from the checkout's ancestor node_modules.
+const stagingParent = resolve(tmpdir())
+const stage = await mkdtemp(join(stagingParent, 'dsh-browser-use-pack-'))
+try {
+    await mkdir(resolve(stage, 'lib'), {recursive: true})
+    await mkdir(resolve(stage, 'node_modules'), {recursive: true})
 
-await cp(resolve(root, 'lib/index.js'), resolve(stage, 'lib/index.js'))
-for (const file of ['cordis.patch.yml', 'README.md', 'README.en.md', 'LICENSE']) {
-    await cp(resolve(root, file), resolve(stage, file))
+    await cp(resolve(root, 'lib/index.js'), resolve(stage, 'lib/index.js'))
+    for (const file of ['cordis.patch.yml', 'README.md', 'README.en.md', 'LICENSE']) {
+        await cp(resolve(root, file), resolve(stage, file))
+    }
+    await mkdir(resolve(stage, 'docs'), {recursive: true})
+    for (const file of ['development.md', 'development.en.md']) {
+        await cp(resolve(root, 'docs', file), resolve(stage, 'docs', file))
+    }
+
+    for (const {source, manifest} of packages) {
+        const target = resolve(stage, 'node_modules', manifest.name)
+        await mkdir(target, {recursive: true})
+        await cp(resolve(source, 'lib'), resolve(target, 'lib'), {recursive: true})
+        await cp(resolve(source, 'README.md'), resolve(target, 'README.md'))
+        await cp(resolve(source, 'README.en.md'), resolve(target, 'README.en.md'))
+        await cp(resolve(root, 'LICENSE'), resolve(target, 'LICENSE'))
+        await writeFile(
+            resolve(target, 'package.json'),
+            `${JSON.stringify(publishManifest(manifest, versions), null, 2)}\n`,
+        )
+    }
+
+    const packedRoot = publishManifest(rootManifest, versions)
+    packedRoot.dependencies = Object.fromEntries(packages.map(({manifest}) => [manifest.name, manifest.version]))
+    packedRoot.bundledDependencies = packages.map(({manifest}) => manifest.name)
+    delete packedRoot.workspaces
+    delete packedRoot.devDependencies
+    delete packedRoot.scripts
+    await writeFile(resolve(stage, 'package.json'), `${JSON.stringify(packedRoot, null, 2)}\n`)
+    // pnpm only packs bundledDependencies from a hoisted layout, so confine it to staging.
+    await writeFile(resolve(stage, 'pnpm-workspace.yaml'), 'packages:\n  - .\nnodeLinker: hoisted\n')
+
+    runPnpm(['pack', '--pack-destination', output], stage)
+} finally {
+    if (dirname(stage) !== stagingParent || !basename(stage).startsWith('dsh-browser-use-pack-')) {
+        throw new Error(`Refusing to remove unexpected staging directory: ${stage}`)
+    }
+    await rm(stage, {recursive: true, force: true})
 }
-
-for (const {source, manifest} of packages) {
-    const target = resolve(stage, 'node_modules', manifest.name)
-    await mkdir(target, {recursive: true})
-    await cp(resolve(source, 'lib'), resolve(target, 'lib'), {recursive: true})
-    await cp(resolve(source, 'README.md'), resolve(target, 'README.md'))
-    await cp(resolve(source, 'README.en.md'), resolve(target, 'README.en.md'))
-    await cp(resolve(root, 'LICENSE'), resolve(target, 'LICENSE'))
-    await writeFile(
-        resolve(target, 'package.json'),
-        `${JSON.stringify(publishManifest(manifest, versions), null, 2)}\n`,
-    )
-}
-
-const packedRoot = publishManifest(rootManifest, versions)
-packedRoot.dependencies = Object.fromEntries(packages.map(({manifest}) => [manifest.name, manifest.version]))
-packedRoot.bundledDependencies = packages.map(({manifest}) => manifest.name)
-delete packedRoot.workspaces
-delete packedRoot.devDependencies
-delete packedRoot.scripts
-await writeFile(resolve(stage, 'package.json'), `${JSON.stringify(packedRoot, null, 2)}\n`)
-// pnpm only packs bundledDependencies from a hoisted layout, so confine it to staging.
-await writeFile(resolve(stage, 'pnpm-workspace.yaml'), 'packages:\n  - .\nnodeLinker: hoisted\n')
-
-runPnpm(['pack', '--pack-destination', output], stage)
-await rm(stage, {recursive: true, force: true})
 console.log(`Created ${resolve(output, packageTarballName(rootManifest))}`)

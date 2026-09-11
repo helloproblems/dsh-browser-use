@@ -1,0 +1,60 @@
+# 开发指南
+
+[English](development.en.md) | 中文
+
+本仓库遵循 [DeepSeek Harness Development guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md) 的 TypeScript 工程布局及源码、产物分离规则。Harness 专用的 Typert 生成、网站构建、翻译合并驱动和 vendor hooks 不适用于这个独立插件 bundle。
+
+## 环境准备
+
+使用 engines 范围内的 Node.js，通过 Corepack 使用固定的 pnpm 11.7.0。工具链、依赖和 checkout 应位于同一操作系统环境；Windows 与 WSL 分别安装依赖。
+
+```sh
+corepack pnpm install --frozen-lockfile
+corepack pnpm typecheck
+```
+
+## TypeScript 工程
+
+| 配置 | 职责 |
+|---|---|
+| 根 tsconfig.json | 仅引用 Host 和 Client 的 solution 入口，不形成编译程序。 |
+| tsconfig.base.json | 严格编译选项和 workspace 源码别名，不设置 files 或 include。 |
+| tsconfig.base.client.json | React JSX、DOM 库，不自动引入 Node 全局类型。 |
+| tsconfig.host.json | Host 测试及 Vitest 配置，引用四个 Host package 工程。 |
+| tsconfig.client.json | Client 测试，引用 Domain 的 Client 工程。 |
+| package 的 tsconfig.json | Host 编译配置；Domain 则仅作为 solution。 |
+| Domain 的 tsconfig.host.json / tsconfig.client.json | 分别编译 Host 与 Client，维护独立增量记录。 |
+
+Host 和 Client 独立编译，避免 Cordis Context 声明合并互相影响。聚合工程直接引用对应的 Domain leaf。Host 测试排除 tests/client，客户端测试放在该目录。
+
+跨 package 使用包名，本地相对导入使用 .ts 扩展名。Vitest 从 tsconfig.base.json 读取 workspace 别名，测试无需 bundle 即可执行源码；静态检查不得把 workspace 导入指向 lib 产物。
+
+Typecheck 遍历工程引用图，在各 package 的 lib/types 下生成 JavaScript、声明及 source map；聚合测试工程使用 noEmit。Build 先清理运行时产物，再编译两个端，将生成的 JavaScript 打包为 lib/index.js 和 Domain 的 loader 模块 lib/client.js。Package exports 的 types 条件指向声明，default 指向运行时 bundle。Clean 删除各 package 的 lib 和聚合工程的 .cache/typecheck 增量记录。
+
+## 验证
+
+根据变更范围运行检查。源码检查无需先构建：
+
+```sh
+corepack pnpm clean
+corepack pnpm test
+corepack pnpm typecheck
+```
+
+修改 exports、声明生成或打包流程后，还需运行：
+
+```sh
+corepack pnpm build
+corepack pnpm pack --dry-run
+corepack pnpm pack:bundle
+```
+
+默认测试包含真实 MCP 工具目录发现，不启动浏览器。浏览器交互测试通过 EDGE_SMOKE=1、CHROME_SMOKE=1 和 BROWSER_SWITCH_SMOKE=1 显式启用，要求安装对应浏览器。报告实际验证平台和跳过的检查。
+
+Bundle 打包使用唯一的系统临时目录，避免 pnpm 从 checkout 的父级 node_modules 收集依赖。归档包含四个 workspace package 及其声明，还有中英文开发指南；外部依赖保留声明，由安装过程解析。无论打包成功还是失败都会删除暂存目录，归档写入 .artifacts/pack。
+
+## 代码约定
+
+保持严格检查开启，包括索引访问、精确可选属性、未使用声明和显式 override。编辑器使用 Remote JSON 前须校验数据；同进程的类型化调用保持静态类型，避免引入 any。Cordis 注册通过 effect 返回 disposer，浏览器资源由 provider 管理。
+
+公开行为同步更新所属 README 和导出 API 的 JSDoc。FIXME 标记阻止发布的问题，TODO 标记近期工作，XXX 标记延期考虑项。文本文件以一个换行结束，交付前运行 git diff --check。
