@@ -103,19 +103,19 @@ pnpm pack:bundle
 该命令会构建 workspace，把四个运行时包作为 bundled dependencies 放入根包，并生成：
 
 ```text
-.artifacts/pack/dsh-browser-use-0.3.0.tgz
+.artifacts/pack/dsh-browser-use-0.5.1.tgz
 ```
 
 使用已安装的 CLI 添加该 tarball：
 
 ```powershell
-dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.3.0.tgz
+dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.5.1.tgz
 ```
 
 也可以使用 `deepseek-harness` 源码 checkout 中的 CLI：
 
 ```powershell
-pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.3.0.tgz
+pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.5.1.tgz
 ```
 
 本地尚未发布的安装应使用 `pnpm pack:bundle`。普通 `pnpm pack` 会把 `workspace:^` 依赖改写为 registry 版本范围，因此只有配置的 registry 中已经存在匹配版本的 `browser-use`、`browser-use-domain`、`browser-use-chrome` 和 `browser-use-edge` 时，普通根包 tarball 才能安装。
