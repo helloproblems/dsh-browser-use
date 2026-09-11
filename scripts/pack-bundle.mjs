@@ -97,6 +97,21 @@ try {
     const packedRoot = publishManifest(rootManifest, versions)
     packedRoot.dependencies = Object.fromEntries(packages.map(({manifest}) => [manifest.name, manifest.version]))
     packedRoot.bundledDependencies = packages.map(({manifest}) => manifest.name)
+    // Installers do not traverse the manifests of bundled packages. Expose their
+    // external requirements on the bundle so a clean profile installs them.
+    for (const {manifest} of packages) {
+        for (const field of ['dependencies', 'peerDependencies']) {
+            for (const [name, range] of Object.entries(manifest[field] ?? {})) {
+                if (versions.has(name)) continue
+                packedRoot[field] ??= {}
+                const existing = packedRoot[field][name]
+                if (existing && existing !== range) {
+                    throw new Error(`Conflicting ${field} for ${name}: ${existing} and ${range}`)
+                }
+                packedRoot[field][name] = range
+            }
+        }
+    }
     delete packedRoot.workspaces
     delete packedRoot.devDependencies
     delete packedRoot.scripts

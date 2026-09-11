@@ -47,11 +47,14 @@ corepack pnpm typecheck
 corepack pnpm build
 corepack pnpm pack --dry-run
 corepack pnpm pack:bundle
+corepack pnpm verify:bundle
 ```
 
 默认测试包含真实 MCP 工具目录发现，不启动浏览器。浏览器交互测试通过 EDGE_SMOKE=1、CHROME_SMOKE=1 和 BROWSER_SWITCH_SMOKE=1 显式启用，要求安装对应浏览器。报告实际验证平台和跳过的检查。
 
-Bundle 打包使用唯一的系统临时目录，避免 pnpm 从 checkout 的父级 node_modules 收集依赖。归档包含四个 workspace package 及其声明，还有中英文开发指南；外部依赖保留声明，由安装过程解析。无论打包成功还是失败都会删除暂存目录，归档写入 .artifacts/pack。
+Bundle 打包使用唯一的系统临时目录，避免 pnpm 从 checkout 的父级 node_modules 收集依赖。归档包含四个 workspace package 及其声明，还有中英文开发指南。外部运行依赖和宿主 peer 依赖同时声明在 bundle 根 manifest 中，因为安装器不会遍历内嵌包的 manifest；版本范围冲突会阻止打包。无论打包成功还是失败都会删除暂存目录，归档写入 .artifacts/pack。
+
+verify:bundle 在全新临时目录中安装该归档，使用 web profile 的 hoisted 布局并关闭自动 peer 安装，显式提供声明的宿主 peer 依赖，导入全部四个插件并检查两个 MCP 后端依赖，不启动浏览器。此检查需要访问 registry 或已有完整的 pnpm 缓存。
 
 ## 代码约定
 

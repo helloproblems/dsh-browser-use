@@ -47,11 +47,14 @@ Changes to package exports, declarations, or bundling also require:
 corepack pnpm build
 corepack pnpm pack --dry-run
 corepack pnpm pack:bundle
+corepack pnpm verify:bundle
 ```
 
 Default tests include real MCP catalog discovery without launching a browser. Browser interaction tests opt in through EDGE_SMOKE=1, CHROME_SMOKE=1, and BROWSER_SWITCH_SMOKE=1 and require the relevant browsers. Report skipped checks and the actual validation platform.
 
-Bundle packing uses a unique system temporary directory so pnpm cannot collect dependencies from the checkout's ancestor node_modules. The tarball includes the four workspace packages and their declarations, plus both development guides; external dependencies remain declared for installation. The temporary directory is removed on success or failure, and the tarball is written under .artifacts/pack.
+Bundle packing uses a unique system temporary directory so pnpm cannot collect dependencies from the checkout's ancestor node_modules. The tarball includes the four workspace packages and their declarations, plus both development guides. External runtime dependencies and host peers are also declared on the bundle root because installers do not traverse bundled package manifests. Conflicting ranges fail packing. The temporary directory is removed on success or failure, and the tarball is written under .artifacts/pack.
+
+verify:bundle installs that tarball in a fresh temporary directory using the web profile's hoisted layout with automatic peer installation disabled, supplies the declared host peers, imports all four plugins, and checks both MCP backend dependencies without launching a browser. It requires registry access or a populated pnpm cache.
 
 ## Code conventions
 
