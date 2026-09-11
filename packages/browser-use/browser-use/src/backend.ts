@@ -14,6 +14,10 @@ export interface BrowserUseSettings {
   browserType: BrowserType
   /** Absolute path of the browser executable. */
   browserPath: string
+  /** Persistent profile root, partitioned by workdir and browser; empty keeps temporary sessions. */
+  userDataDir?: string
+  /** Store each session in its own subdirectory of userDataDir. Defaults to false. */
+  sessionIsolation?: boolean
 }
 
 /** Browser choices understood by the shared settings contract. */

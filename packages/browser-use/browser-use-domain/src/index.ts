@@ -46,7 +46,7 @@ function definition(backend: BrowserUseBackend, tool: ReturnType<BrowserUseBacke
 }
 
 export function apply(ctx: Context, config: DomainConfig): void {
-  const base: BrowserUseSettings = { headless: config.headless, browserType: config.browserType, browserPath: config.browserPath.trim() }
+  const base: BrowserUseSettings = { headless: config.headless, browserType: config.browserType, browserPath: config.browserPath.trim(), userDataDir: config.userDataDir?.trim() ?? '', sessionIsolation: config.sessionIsolation ?? false }
   const report = (error: unknown) => ctx.logger.warn('browser-use: ' + String(error))
   const switcher = new BackendSwitcher(base,
     settings => settings.browserType === config.browserType ? config.backend : settings.browserType,

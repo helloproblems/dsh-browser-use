@@ -1,6 +1,6 @@
 {
   "name": "browser-use-chrome",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Chrome backend for browser-use",
   "type": "module",
   "main": "lib/index.js",

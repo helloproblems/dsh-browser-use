@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { browserUseBackendServiceKey, type BrowserUseBackend, type BrowserUseResult, type BrowserUseSettings, type BrowserUseTool } from 'browser-use'
+import { browserUseBackendServiceKey, sessionBrowserSettings, type BrowserUseBackend, type BrowserUseResult, type BrowserUseSettings, type BrowserUseTool } from 'browser-use'
 import { Config, type Config as ChromeConfig } from './config.ts'
 import { connectChrome, type ChromeConnector, type ChromeRuntime } from './connection.ts'
 
@@ -53,7 +53,7 @@ export class ChromeBrowserUseBackend implements BrowserUseBackend {
       if (!runtime || runtime.closed) {
         this.sessions.delete(owner)
         await runtime?.close()
-        runtime = await this.connect(this.settings, owner)
+        runtime = await this.connect(sessionBrowserSettings(this.settings, owner), owner)
         this.sessions.set(owner, runtime)
       }
       const result = await runtime.client.callTool({ name: toolName, arguments: args }, undefined, { timeout: this.config.toolCallTimeoutMs })
@@ -79,7 +79,9 @@ export class ChromeBrowserUseBackend implements BrowserUseBackend {
     return this.enqueue(async () => {
       this.assertActive()
       if (next.browserType !== 'chrome') throw new Error('Chrome backend requires browserType: chrome')
-      if (next.headless === this.settings.headless && next.browserPath === this.settings.browserPath) return
+      if (next.headless === this.settings.headless && next.browserPath === this.settings.browserPath
+        && (next.userDataDir?.trim() ?? '') === (this.settings.userDataDir?.trim() ?? '')
+        && (next.sessionIsolation ?? false) === (this.settings.sessionIsolation ?? false)) return
       this.settings = next
       await this.reset()
     })

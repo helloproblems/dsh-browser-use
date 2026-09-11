@@ -35,6 +35,13 @@ describe('Chrome MCP', () => {
     expect(args[args.indexOf('--executable-path') + 1]).toBe('C:/Program Files/Chrome/chrome.exe')
   })
 
+  it('uses the persistent directory instead of isolation when configured', () => {
+    const args = chromeServerArgs({ ...settings, userDataDir: ' C:/Browser Data/Chrome ' })
+    expect(args).not.toContain('--isolated')
+    expect(args[args.indexOf('--user-data-dir') + 1]).toBe('C:/Browser Data/Chrome')
+    expect(chromeServerArgs({ ...settings, userDataDir: ' ' })).toContain('--isolated')
+  })
+
   it('isolates owners, forwards timeout/results, recovers a dead connection and drains cleanup', async () => {
     const runtimes: ChromeRuntime[] = []
     const connect = vi.fn(async () => {
@@ -70,6 +77,20 @@ describe('Chrome MCP', () => {
     expect(runtimes[2]!.close).not.toHaveBeenCalled()
     await backend.reconfigure({ ...settings, headless: false })
     expect(runtimes[2]!.close).toHaveBeenCalledOnce()
+    await backend.execute(b, 'action', {})
+    await backend.reconfigure({ ...settings, headless: false, userDataDir: 'C:/Browser Data/Chrome' })
+    expect(runtimes[4]!.close).toHaveBeenCalledOnce()
+    await backend.execute(b, 'action', {})
+    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: expect.stringMatching(/workdirs[\\/][a-f0-9]{64}[\\/]chrome$/) }), b)
+    const isolated = { ...settings, headless: false, userDataDir: 'C:/Browser Data/Chrome', sessionIsolation: true }
+    await backend.reconfigure(isolated)
+    expect(runtimes[5]!.close).toHaveBeenCalledOnce()
+    await backend.execute(b, 'action', {})
+    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: expect.stringMatching(/sessions[\\/]chrome[\\/][a-f0-9]{64}$/) }), b)
+    backend.release(b)
+    await backend.execute(b, 'action', {})
+    const calls = vi.mocked(connect).mock.calls as unknown as [Record<string, unknown>, object][]
+    expect(calls.at(-1)![0].userDataDir).toBe(calls.at(-2)![0].userDataDir)
     await backend.close()
     await backend.close()
     await expect(backend.execute(a, 'action', {})).rejects.toThrow('disposed')

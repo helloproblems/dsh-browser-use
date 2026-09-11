@@ -1,6 +1,6 @@
 {
   "name": "browser-use",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Backend-neutral browser automation hub for DSH",
   "type": "module",
   "main": "lib/index.js",

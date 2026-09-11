@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { browserUseBackendServiceKey, type BrowserUseBackend, type BrowserUseResult, type BrowserUseSettings, type BrowserUseTool } from 'browser-use'
+import { browserUseBackendServiceKey, sessionBrowserSettings, type BrowserUseBackend, type BrowserUseResult, type BrowserUseSettings, type BrowserUseTool } from 'browser-use'
 import { Config, type Config as EdgeConfig } from './config.ts'
 import { connectEdge, type EdgeRuntime } from './connection.ts'
 
@@ -38,7 +38,7 @@ export class EdgeBrowserUseBackend implements BrowserUseBackend {
       if (!this.catalog.some(tool => tool.name === toolName)) throw new Error(`unknown Edge tool '${toolName}'`)
       let runtime = this.sessions.get(owner)
       if (!runtime) {
-        runtime = await this.connect(this.settings, owner)
+        runtime = await this.connect(sessionBrowserSettings(this.settings, owner), owner)
         this.sessions.set(owner, runtime)
       }
       const result = await runtime.client.callTool({ name: toolName, arguments: args }, undefined, { timeout: this.config.toolCallTimeoutMs })
@@ -64,7 +64,9 @@ export class EdgeBrowserUseBackend implements BrowserUseBackend {
     const next = { ...settings }
     return this.enqueue(async () => {
       if (next.browserType !== 'edge') throw new Error('Edge backend requires browserType: edge; switch the Domain backend and browserType together')
-      if (next.headless === this.settings.headless && next.browserPath === this.settings.browserPath) return
+      if (next.headless === this.settings.headless && next.browserPath === this.settings.browserPath
+        && (next.userDataDir?.trim() ?? '') === (this.settings.userDataDir?.trim() ?? '')
+        && (next.sessionIsolation ?? false) === (this.settings.sessionIsolation ?? false)) return
       this.settings = next
       await this.reset()
     })

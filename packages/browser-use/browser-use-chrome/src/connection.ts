@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { ListRootsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
-import type { BrowserUseSettings } from 'browser-use'
+import { browserWorkdir, type BrowserUseSettings } from 'browser-use'
 
 export interface ChromeRuntime {
   client: Pick<Client, 'listTools' | 'callTool'>
@@ -23,7 +23,8 @@ export function chromeServerArgs(settings: BrowserUseSettings): string[] {
   if (!bin) throw new Error('chrome-devtools-mcp does not declare its MCP CLI')
   return [
     resolve(dirname(manifestPath), bin),
-    '--isolated', '--no-usage-statistics', '--no-performance-crux',
+    ...(settings.userDataDir?.trim() ? ['--user-data-dir', settings.userDataDir.trim()] : ['--isolated']),
+    '--no-usage-statistics', '--no-performance-crux',
     '--no-page-id-routing', '--no-slim', '--no-category-extensions',
     '--no-experimental-devtools', '--no-experimental-include-all-pages',
     '--redact-network-headers', '--no-allow-unrestricted-paths',
@@ -34,7 +35,7 @@ export function chromeServerArgs(settings: BrowserUseSettings): string[] {
 
 export async function connectChrome(settings: BrowserUseSettings, owner: object, log: (message: string) => void): Promise<ChromeRuntime> {
   const metadata = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
-  const cwd = (owner as { session?: { header?: { cwd?: string } } }).session?.header?.cwd ?? process.cwd()
+  const cwd = browserWorkdir(owner)
   const client = new Client({ name: 'dsh-browser-use-chrome', version: metadata.version }, { capabilities: { roots: {} } })
   client.setRequestHandler(ListRootsRequestSchema, () => ({ roots: [{ uri: pathToFileURL(cwd).href, name: 'workspace' }] }))
   const transport = new StdioClientTransport({

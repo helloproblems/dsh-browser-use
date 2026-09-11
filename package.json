@@ -1,6 +1,6 @@
 {
   "name": "dsh-browser-use",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "DSH bundle for the browser-use hub, domain, and browser backends",
   "type": "module",
   "main": "lib/index.js",
@@ -12,6 +12,8 @@
   "scripts": {
     "clean": "node scripts/clean.mjs",
     "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
+    "build:watch": "node scripts/build.mjs --watch",
     "pack:bundle": "pnpm build && node scripts/pack-bundle.mjs",
     "verify:bundle": "node scripts/verify-bundle.mjs",
     "typecheck": "tsc -b tsconfig.host.json tsconfig.client.json",

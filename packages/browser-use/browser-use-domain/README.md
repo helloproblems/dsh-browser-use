@@ -26,6 +26,8 @@ Domain 拥有工具名、工具超时、设置和 Agent 生命周期。它不连
     headless: false
     browserType: chrome
     browserPath: ''
+    userDataDir: ''
+    sessionIsolation: false
     toolCallTimeoutMs: 120000
 ```
 
@@ -39,9 +41,17 @@ Domain 拥有工具名、工具超时、设置和 Agent 生命周期。它不连
 | `headless` | `false` | 仅在后端自行启动浏览器时隐藏窗口 |
 | `browserType` | `chrome` / `edge` | 保存后动态切换后端 |
 | `browserPath` | 空 | 浏览器可执行文件绝对路径；为空时启动阶段自动检索 |
+| `userDataDir` | 空 | 浏览器用户数据目录绝对路径；为空时使用临时隔离模式，填写后保留登录状态等数据 |
+| `sessionIsolation` | `false` | 数据隔离级别：`false` 为工作区，`true` 为会话 |
 | `toolCallTimeoutMs` | `120000` | 应用于本 Domain 发布的每个 DSH 工具定义的超时 |
 
-`backend` 与 `toolCallTimeoutMs` 属于组合配置。暴露给 DSH GUI 的设置命名空间包含 `headless`、`browserType` 和 `browserPath`。
+`backend` 与 `toolCallTimeoutMs` 属于组合配置。暴露给 DSH GUI 的设置命名空间包含 `headless`、`browserType`、`browserPath`、`userDataDir` 和 `sessionIsolation`。
+
+修改用户数据目录或数据隔离级别会释放旧会话，下次调用时使用新配置；已有数据不会被删除。工作目录取自工具执行上下文的 `agent.session.header.cwd`，缺失时回退到 `process.cwd()`。路径规范化后计算 SHA-256，Windows 下忽略路径大小写。
+
+开启 `sessionIsolation` 后，目录为 `<userDataDir>/workdirs/<工作目录哈希>/sessions/<chrome|edge>/<会话标识哈希>`。不同工作目录、会话和浏览器不共享数据，同一工作目录中的同一会话恢复后复用目录。没有会话 ID 的调用按 owner 对象分配随机标识，仅在进程内保持稳定。不会将原目录的登录数据复制到隔离目录。
+
+选择“工作区”时使用 `<userDataDir>/workdirs/<工作目录哈希>/<chrome|edge>`，仍保持工作目录和浏览器隔离；同一目录同时只能供一个浏览器会话使用。目录留空时，无论隔离级别均继续按 Agent 使用临时隔离会话。DSH GUI 的“数据隔离级别”提供“工作区 / 会话”选项，兼容已有的 `sessionIsolation` 布尔配置。
 
 ## 工具发布
 
@@ -65,10 +75,16 @@ mcp__<backend.browserType>__<backend-tool-name>
 
 - Edge 使用 Playwright MCP；启用两个后端插件后，可通过设置页热切换浏览器。
 - 无头模式开关。
-- 可编辑的浏览器可执行文件位置与本机文件选择器。
+- 可编辑的浏览器可执行文件位置与“选择”按钮，通过 DSH 选择安装目录后自动定位可执行文件。
+- 浏览器用户数据目录与“选择”按钮，选择 DSH 所在电脑上的目录；取消保留原值，保存后应用。
+- “数据隔离级别”下拉选项：工作区 / 会话，默认工作区。
 - 通过 DSH settings remote API 完成的 revision 感知替换。
 
-文件选择器优先从当前填写的路径打开；路径为空时使用自动检索结果。Windows 使用启用视觉样式的现代系统文件对话框，支持每显示器 DPI 和前台激活，默认显示所有文件。取消选择保留原值，选中后点击“保存”应用设置。
+两个“选择”按钮均优先使用 `ctx.directoryPicker`。浏览器位置选择安装目录后，Windows 查找对应的 `chrome.exe` / `msedge.exe`（也支持安装目录下的 `Application` 子目录），macOS 支持应用包及其所在目录，Linux 查找对应的浏览器程序。找不到所选类型时保留原值并提示重新选择，也可手动填写完整文件路径。取消选择保留原值，选中后点击“保存”应用设置。
+
+两个选择入口共用路径控件、请求生命周期及 `ctx.directoryPicker` 的 native 能力，与 DSH“添加工作区”使用同一个服务，原生名称与本机一致；服务报错不会改用另一个弹窗。仅在旧版宿主未提供该服务时使用插件的备用文件或目录选择器。
+
+备用选择器读取客户端 `ctx.locale.getLocale().active`，缺失时使用 Windows 用户的显示语言；可用语言资源由 Windows 决定。Windows 备用实现使用独立 STA 线程中的 `IFileOpenDialog`，避免 PowerShell 主线程覆盖语言。等待期间原选择按钮变为“取消选择”，不新增提示行或改变按钮宽度；两分钟未完成会结束等待并恢复控件，离开设置页也会中止请求。浏览器文件单独验证可执行路径，用户数据目录单独验证文件夹。
 
 ## 生命周期
 

@@ -1,6 +1,6 @@
 {
   "name": "browser-use-edge",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Microsoft Edge backend using Playwright MCP",
   "type": "module",
   "main": "lib/index.js",

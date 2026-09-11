@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { browserPathError, readSettings } from '../../src/client/settings.ts'
+import { browserPathError, readSettings, userDataDirError } from '../../src/client/settings.ts'
 
 describe('browser settings replies', () => {
   it.each(['chrome', 'edge'])('decodes %s settings', browserType => {
     const value = { browserType, headless: true, browserPath: 'C:/Browser/browser.exe' }
-    expect(readSettings(value)).toEqual(value)
+    expect(readSettings(value)).toEqual({ ...value, userDataDir: '', sessionIsolation: false })
   })
 
   it.each([null, [], {}, { browserType: 'firefox', headless: true, browserPath: '' },
@@ -12,6 +12,22 @@ describe('browser settings replies', () => {
     { browserType: 'edge', headless: false, browserPath: null },
   ])('rejects malformed Remote values: %j', value => {
     expect(() => readSettings(value)).toThrow('浏览器自动化设置格式无效')
+  })
+})
+
+describe('user data directory settings', () => {
+  it('round-trips the directory and rejects malformed values', () => {
+    const value = { browserType: 'edge', headless: false, browserPath: '', userDataDir: 'C:/Browser Data/Edge' }
+    expect(readSettings(value)).toEqual({ ...value, sessionIsolation: false })
+    expect(readSettings({ ...value, sessionIsolation: true }).sessionIsolation).toBe(true)
+    expect(() => readSettings({ ...value, sessionIsolation: 'true' })).toThrow()
+    expect(() => readSettings({ ...value, userDataDir: 123 })).toThrow()
+  })
+  it.each(['', '   ', 'C:\\Browser Data\\Edge', '/tmp/edge', '\\\\server\\share\\edge'])('accepts %s', path => {
+    expect(userDataDirError(path)).toBe('')
+  })
+  it.each(['profiles/edge', '~/edge', 'C:edge'])('rejects relative directory %s', path => {
+    expect(userDataDirError(path)).toContain('绝对路径')
   })
 })
 

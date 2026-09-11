@@ -4,7 +4,14 @@
 export type BrowserType = 'chrome' | 'edge'
 
 /** Editable browser connection settings. */
-export type SettingsValue = { headless: boolean; browserType: BrowserType; browserPath: string }
+export type SettingsValue = { headless: boolean; browserType: BrowserType; browserPath: string; userDataDir?: string; sessionIsolation?: boolean }
+
+/** Accept absolute Windows/UNC and POSIX paths entered for the host. */
+export function userDataDirError(value: string | undefined): string {
+  const path = value?.trim() ?? ''
+  return !path || /^(?:[a-z]:[\\/]|\\\\[^\\]+\\[^\\]+|\/)/i.test(path)
+    ? '' : '浏览器用户数据目录必须填写绝对路径。'
+}
 
 /** Validate the executable name without changing the selected type or path. */
 export function browserPathError({ browserType, browserPath }: SettingsValue): string {
@@ -30,8 +37,12 @@ export function browserPathError({ browserType, browserPath }: SettingsValue): s
 export function readSettings(value: unknown): SettingsValue {
   if (typeof value !== 'object' || value === null || !('headless' in value) || typeof value.headless !== 'boolean'
     || !('browserType' in value) || (value.browserType !== 'chrome' && value.browserType !== 'edge')
-    || !('browserPath' in value) || typeof value.browserPath !== 'string') {
+    || !('browserPath' in value) || typeof value.browserPath !== 'string'
+    || ('userDataDir' in value && typeof value.userDataDir !== 'string')
+    || ('sessionIsolation' in value && typeof value.sessionIsolation !== 'boolean')) {
     throw new Error('浏览器自动化设置格式无效')
   }
-  return { headless: value.headless, browserType: value.browserType, browserPath: value.browserPath }
+  return { headless: value.headless, browserType: value.browserType, browserPath: value.browserPath,
+    userDataDir: 'userDataDir' in value ? value.userDataDir as string : '',
+    sessionIsolation: 'sessionIsolation' in value ? value.sessionIsolation as boolean : false }
 }

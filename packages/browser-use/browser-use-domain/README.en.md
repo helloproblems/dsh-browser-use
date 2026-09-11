@@ -26,6 +26,8 @@ Mount it with the Hub and at least one working backend:
     headless: false
     browserType: chrome
     browserPath: ''
+    userDataDir: ''
+    sessionIsolation: false
     toolCallTimeoutMs: 120000
 ```
 
@@ -39,9 +41,17 @@ The `backend` field names the provider for the initial browser type. Domain watc
 | `headless` | `false` | Hide a browser window only when the backend launches one |
 | `browserType` | `chrome` / `edge` | Selects the active backend at runtime |
 | `browserPath` | empty | Absolute browser executable path; an empty value is auto-detected at startup |
+| `userDataDir` | empty | Absolute persistent browser profile directory; empty keeps temporary isolated sessions |
+| `sessionIsolation` | `false` | Data isolation level: `false` for workspace, `true` for session |
 | `toolCallTimeoutMs` | `120000` | Timeout applied to every DSH tool definition published by this Domain |
 
-`backend` and `toolCallTimeoutMs` are composition settings. The settings namespace exposed to the DSH GUI contains `headless`, `browserType`, and `browserPath`.
+`backend` and `toolCallTimeoutMs` are composition settings. The settings namespace exposed to the DSH GUI contains `headless`, `browserType`, `browserPath`, `userDataDir`, and `sessionIsolation`.
+
+Changing the directory or data isolation level closes existing sessions; the next call uses the new configuration without deleting existing data. The workdir comes from the execution context's `agent.session.header.cwd`, falling back to `process.cwd()`. The normalized path is hashed with SHA-256, ignoring case on Windows.
+
+With `sessionIsolation` enabled, profiles live in `<userDataDir>/workdirs/<workdir hash>/sessions/<chrome|edge>/<session identity hash>`. Restored sessions in the same workdir reuse their directory; different workdirs, sessions and browsers use separate profiles. Owners without a session ID receive a random identity stable for that object within the process. Existing login data is not copied into isolated profiles.
+
+With workspace isolation selected, profiles use `<userDataDir>/workdirs/<workdir hash>/<chrome|edge>`, retaining workdir and browser isolation. Only one browser session can use a directory at a time. An empty directory always retains temporary per-Agent isolated sessions. The GUI offers a "Data isolation level" dropdown with Workspace / Session options, preserving compatibility with the existing `sessionIsolation` boolean. The user data directory has a "Select" button that opens a directory chooser on the DSH host; cancelling preserves the current value, and saving applies the selection.
 
 ## Tool publication
 
@@ -65,10 +75,14 @@ The client module registers a settings section with:
 
 - Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
 - A headless-mode switch.
-- An editable browser executable path with a native file chooser.
+- An editable browser executable path with a Select button that uses DSH to choose the installation directory and locates the executable inside it.
 - Revision-aware replacement through the DSH settings remote API.
 
-The file chooser starts from the entered path, or browser discovery when the path is empty. Windows uses the modern system file dialog with visual styles, per-monitor DPI awareness, and foreground activation, showing all files by default. Cancelling preserves the current value; selecting a file updates the draft until Save is clicked.
+Both Select buttons prefer `ctx.directoryPicker`. For browser location, Windows resolves `chrome.exe` or `msedge.exe` in the selected installation directory or its Application subdirectory; macOS supports application bundles and their containing directory; Linux checks the corresponding browser programs. Missing or mismatched installations leave the current value intact and display an error. A full executable path can still be entered manually. Cancelling preserves the current value; Save applies the selection.
+
+Both selection fields share the path control, request lifecycle, and native capability of `ctx.directoryPicker`, the same service used by Add Workspace, preserving the host's native names. Service failures do not launch another chooser. Only older hosts without that service use the plugin's fallback file or directory picker.
+
+The fallback file and directory pickers read the client's `ctx.locale.getLocale().active`, falling back to the Windows user's display language; installed Windows resources determine available translations. A dedicated STA thread prevents PowerShell from overriding the Windows dialog language. During selection, the existing button becomes Cancel selection without adding a status row or changing its width. A two-minute deadline restores the controls, and leaving settings also aborts pending selection. Executable and directory validation remain specific to each mode.
 
 ## Lifecycle
 

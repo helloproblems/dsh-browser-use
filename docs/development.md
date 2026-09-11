@@ -31,6 +31,32 @@ Host 和 Client 独立编译，避免 Cordis Context 声明合并互相影响。
 
 Typecheck 遍历工程引用图，在各 package 的 lib/types 下生成 JavaScript、声明及 source map；聚合测试工程使用 noEmit。Build 先清理运行时产物，再编译两个端，将生成的 JavaScript 打包为 lib/index.js 和 Domain 的 loader 模块 lib/client.js。Package exports 的 types 条件指向声明，default 指向运行时 bundle。Clean 删除各 package 的 lib 和聚合工程的 .cache/typecheck 增量记录。
 
+## 自动构建与热加载
+
+在插件仓库运行 `pnpm dev`（等价于 `pnpm build:watch` 或 `pnpm build --watch`），在另一个终端的 deepseek-harness 仓库运行 `pnpm dsh web`。应先等插件完成初次构建，再启动 DSH。
+
+watch 启动时执行一次完整清理和 TypeScript 编译，然后持续运行 `tsc -b --watch` 与五个 esbuild watcher。修改源码会更新 `lib/types`，再生成四个 Host 的 `lib/index.js` 和 Domain 的 `lib/client.js` loader 模块。监听阶段不会删除 lib；最终文件只在内容变化时通过临时文件原子替换，临时文件放在 `.cache/build`，不进入 HMR 目录。Ctrl+C 会关闭编译器和打包 watcher。
+
+DSH 用户 patch 中启用 `hmr`，将四个 package 的 lib 目录加入 `config.root`，并启用 Web 的 `client-hmr`。例如 Windows checkout：
+
+```yaml
+- id: hmr
+  disabled: false
+  config:
+    root:
+      - 'C:/Users/xu_wa/xyd-workspace/dsh-browser-use/packages/browser-use/browser-use/lib'
+      - 'C:/Users/xu_wa/xyd-workspace/dsh-browser-use/packages/browser-use/browser-use-chrome/lib'
+      - 'C:/Users/xu_wa/xyd-workspace/dsh-browser-use/packages/browser-use/browser-use-domain/lib'
+      - 'C:/Users/xu_wa/xyd-workspace/dsh-browser-use/packages/browser-use/browser-use-edge/lib'
+    ignored:
+      - '**/node_modules/**'
+      - '**/.git/**'
+      - '**/.cache/**'
+    debounce: 200
+```
+
+按实际 checkout 调整路径。`pnpm build` 仍是一次性构建；watch 运行期间不要同时执行 clean 或 build。watch 中的编译错误会显示在终端，修复后自动继续；初次 TypeScript 编译失败则退出，需要修复后重新启动。
+
 ## 验证
 
 根据变更范围运行检查。源码检查无需先构建：
@@ -45,12 +71,15 @@ corepack pnpm typecheck
 
 ```sh
 corepack pnpm build
+node --test scripts/tests/build-watch.mjs
 corepack pnpm pack --dry-run
 corepack pnpm pack:bundle
 corepack pnpm verify:bundle
 ```
 
 默认测试包含真实 MCP 工具目录发现，不启动浏览器。浏览器交互测试通过 EDGE_SMOKE=1、CHROME_SMOKE=1 和 BROWSER_SWITCH_SMOKE=1 显式启用，要求安装对应浏览器。报告实际验证平台和跳过的检查。
+
+修改 Windows 路径选择器后，在交互桌面运行 `node --test scripts/tests/windows-picker-smoke.mjs`。此检查会真实打开文件和文件夹对话框，验证可见性、前台激活、选择及取消，并自动关闭测试弹窗。
 
 Bundle 打包使用唯一的系统临时目录，避免 pnpm 从 checkout 的父级 node_modules 收集依赖。归档包含四个 workspace package 及其声明，还有中英文开发指南。外部运行依赖和宿主 peer 依赖同时声明在 bundle 根 manifest 中，因为安装器不会遍历内嵌包的 manifest；版本范围冲突会阻止打包。无论打包成功还是失败都会删除暂存目录，归档写入 .artifacts/pack。
 

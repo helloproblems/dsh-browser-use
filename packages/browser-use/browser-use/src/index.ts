@@ -9,6 +9,7 @@ import { BackendRegistry } from './registry.ts'
 
 export type { BrowserType, BrowserUseBackend, BrowserUseResult, BrowserUseSettings, BrowserUseTool } from './backend.ts'
 export { browserExecutableCandidates, discoverBrowserExecutable } from './executable.ts'
+export { browserWorkdir, sessionBrowserSettings } from './profile.ts'
 export type { BrowserExecutableDiscoveryOptions } from './executable.ts'
 export { BrowserUseError } from './error.ts'
 export type { BrowserUseErrorCode } from './error.ts'
