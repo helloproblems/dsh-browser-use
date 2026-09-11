@@ -1,6 +1,6 @@
 # browser-use-edge
 
-[English](README.en.md) | 中文
+中文 | [English](README.en.md)
 
 通过官方 `@playwright/mcp@0.0.80` 和 MCP SDK 接入 Microsoft Edge。使用公开 `createConnection()` API 与 `InMemoryTransport` 交换 MCP 消息，无需子进程、调试端口或单独配置 MCP 服务。
 

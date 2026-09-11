@@ -5,7 +5,7 @@ kind: "package-reference"
 
 # browser-use-chrome
 
-[English](README.en.md) | 中文
+中文 | [English](README.en.md)
 
 ## 接入方式
 

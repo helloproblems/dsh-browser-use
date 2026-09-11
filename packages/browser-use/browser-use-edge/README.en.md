@@ -1,6 +1,6 @@
 # browser-use-edge
 
-English | [中文](README.md)
+[中文](README.md) | English
 
 Microsoft Edge backend using pinned `@playwright/mcp@0.0.80` and the official MCP SDK. The public `createConnection()` API and `InMemoryTransport` exchange real MCP messages without subprocesses or listening ports.
 

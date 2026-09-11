@@ -5,7 +5,7 @@ kind: "repository"
 
 # dsh-browser-use
 
-English | [中文](README.md)
+[中文](README.md) | English
 
 ## Summary
 
@@ -103,19 +103,19 @@ pnpm pack:bundle
 The command builds the workspace, stages the four runtime packages as bundled dependencies, and writes:
 
 ```text
-.artifacts/pack/dsh-browser-use-0.5.1.tgz
+.artifacts/pack/dsh-browser-use-0.6.0.tgz
 ```
 
 Install that tarball with an installed CLI:
 
 ```powershell
-dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.5.1.tgz
+dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.6.0.tgz
 ```
 
 Or use the CLI from a `deepseek-harness` source checkout:
 
 ```powershell
-pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.5.1.tgz
+pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path/to/dsh-browser-use/.artifacts/pack/dsh-browser-use-0.6.0.tgz
 ```
 
 Use `pnpm pack:bundle` for an unpublished local installation. A plain `pnpm pack` rewrites `workspace:^` dependencies to registry version ranges and therefore produces a root tarball that works only when the matching `browser-use`, `browser-use-domain`, `browser-use-chrome`, and `browser-use-edge` packages are available from the configured registry.

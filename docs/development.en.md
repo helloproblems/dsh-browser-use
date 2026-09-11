@@ -1,6 +1,6 @@
 # Development guide
 
-English | [中文](development.md)
+[中文](development.md) | English
 
 This repository follows the TypeScript layout and source/artifact separation in the [DeepSeek Harness development guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md). Harness-specific Typert generation, website builds, translation merge drivers, and vendor hooks do not apply to this independent plugin bundle.
 

@@ -1,6 +1,6 @@
 # 开发指南
 
-[English](development.en.md) | 中文
+中文 | [English](development.en.md)
 
 本仓库遵循 [DeepSeek Harness Development guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md) 的 TypeScript 工程布局及源码、产物分离规则。Harness 专用的 Typert 生成、网站构建、翻译合并驱动和 vendor hooks 不适用于这个独立插件 bundle。
 

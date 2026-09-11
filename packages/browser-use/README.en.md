@@ -5,7 +5,7 @@ kind: "package-group"
 
 # packages/browser-use
 
-English | [中文](README.md)
+[中文](README.md) | English
 
 ## Summary
 
