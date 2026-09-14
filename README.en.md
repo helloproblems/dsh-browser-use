@@ -11,6 +11,14 @@ kind: "repository"
 
 `dsh-browser-use` provides browser automation for DSH. The project consists of three layers: the Hub defines browser backend contracts and a named registry, each Backend manages browser resources and executes tools, and the Domain selects a backend and publishes its tools and settings to DSH. The repository root owns workspace and bundle assembly; all runtime source lives under `packages/browser-use/`.
 
+## Real task demo
+
+Open the Travel category on [Books to Scrape](https://books.toscrape.com/), compare prices across 11 books, find the three cheapest, and check each price on its detail page.
+
+![Chrome backend task: open Travel, compare book prices, verify detail pages, and summarize the three cheapest books](docs/assets/travel-books-demo.gif)
+
+This 17-second GIF shows a scripted task executed through this repository's `browser-use-chrome` backend. The images were captured from a real Chrome session; step labels and the result card were added during editing, and waiting time was shortened. Books to Scrape uses demo data.
+
 ## Package layout
 
 | Directory | Package | Responsibility |

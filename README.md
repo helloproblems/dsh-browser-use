@@ -11,6 +11,14 @@ kind: "repository"
 
 `dsh-browser-use` 为 DSH 提供浏览器自动化能力。项目由 Hub、Backend 和 Domain 三层组成：Hub 定义浏览器后端契约与具名注册表，Backend 管理浏览器资源并执行工具，Domain 选择后端并向 DSH 发布工具和设置。仓库根目录负责 workspace 与 bundle 装配；所有运行时源码都位于 `packages/browser-use/`。
 
+## 实际任务演示
+
+在 [Books to Scrape](https://books.toscrape.com/) 中打开 Travel 分类，比较 11 本书的价格，找出最便宜的三本，并逐一打开详情页核对价格。
+
+![Chrome 后端实际任务：打开 Travel 分类、比较书价、核对详情并汇总最便宜的三本书](docs/assets/travel-books-demo.gif)
+
+约 17 秒的 GIF 来自通过本仓库 `browser-use-chrome` 后端执行的脚本化任务。画面取自真实 Chrome 会话，步骤说明和结果卡为后期添加，等待时间已压缩。Books to Scrape 使用演示数据。
+
 ## 包结构
 
 | 目录 | 包 | 职责 |
