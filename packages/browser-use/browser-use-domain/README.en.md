@@ -121,7 +121,7 @@ This is the only package in the family that directly changes model capabilities.
 - The backend tool catalog is captured once per activation; settings changes do not add or remove tools.
 - Reconfiguration failures are warnings rather than an unhealthy plugin state, so tools may stay registered while the backend cannot connect.
 - The text renderer ignores non-text content blocks; callers still receive the original structured tool value.
-- The settings client currently contains Chinese interface labels only.
+- The settings client follows `ctx.locale.getLocale().active`: Chinese (including regional variants) uses Chinese copy; other locales use English. Navigation labels, fields, buttons, and validation update immediately without reloading settings, losing drafts, or interrupting saves and directory selection. Diagnostic details returned by external services retain their original text.
 
 ## Related documentation
 

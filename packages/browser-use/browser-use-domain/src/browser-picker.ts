@@ -12,6 +12,10 @@ export const BROWSER_PICKER_ENDPOINT = '/browser-use/pick-browser-executable'
 export const USER_DATA_PICKER_ENDPOINT = '/browser-use/pick-user-data-directory'
 export const BROWSER_PICKER_HEADER = 'x-dsh-browser-use-picker'
 
+class BrowserNotFoundError extends Error {
+  readonly code = 'browser-not-found'
+}
+
 interface WebRouteLike {
   kind: 'exact'
   path: string
@@ -207,7 +211,7 @@ export async function pickHostBrowserExecutable(service: unknown, browserType: B
     },
   })
   signal.throwIfAborted()
-  if (!found) throw new Error(`所选目录中未找到 ${name} 可执行文件，请选择浏览器安装目录，或手动填写可执行文件路径。`)
+  if (!found) throw new BrowserNotFoundError(`所选目录中未找到 ${name} 可执行文件，请选择浏览器安装目录，或手动填写可执行文件路径。`)
   return found
 }
 
@@ -268,7 +272,7 @@ function pickerHandler(request: IncomingMessage, response: ServerResponse, direc
     (error: unknown) => {
       if (response.destroyed) return
       const message = error instanceof Error ? error.message : String(error)
-      respondJson(response, 500, { error: message })
+      respondJson(response, 500, { error: message, ...(error instanceof BrowserNotFoundError ? { code: error.code } : controller.signal.aborted ? { code: 'picker-timeout' } : {}) })
     },
   ).finally(() => {
     clearTimeout(timeout)

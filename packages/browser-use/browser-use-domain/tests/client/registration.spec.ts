@@ -10,6 +10,7 @@ it('keeps the remote stable across settings slot renders so drafts are not reloa
   let render: (() => ReactElement<{ remote: unknown }>) | undefined
   const readRemote = vi.fn(() => ({ settings: {} }))
   const ctx = {
+    get: () => ({ getLocale: () => ({ active: 'zh' }) }),
     get remote() { return readRemote() },
     slots: {
       inject: (_name: string, register: () => void) => register(),
