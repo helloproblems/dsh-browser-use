@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
-    "@playwright/mcp": "0.0.80"
+    "@playwright/mcp": "0.0.80",
+    "playwright-core": "1.63.0-alpha-2026-08-31"
   },
   "devDependencies": {
     "@deepseek-ai/schemastery": "^3.18.2"

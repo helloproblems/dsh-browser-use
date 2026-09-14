@@ -65,7 +65,9 @@ For the Chrome backend, examples include `mcp__chrome__click` and `mcp__chrome__
 
 Each definition preserves the backend description and JSON Schema, applies `toolCallTimeoutMs`, and forwards an object input to `backend.execute()`. The initiating `Agent` object becomes the opaque owner. Calls without an Agent fail with `browser-use tools require an initiating DSH session`.
 
-Backend output keeps the MCP-style `content` array and optional `structuredContent`. The DSH renderer extracts text blocks from `content`; when no text block exists, it renders `(no textual output)` while retaining the structured result as the tool value.
+Backend output keeps the MCP-style `content` array and optional `structuredContent` for programmatic callers. Domain saves screenshots through the DSH `attachments` service and presents text and durable image references to the model in their original order. The raw MCP value remains unchanged. Images work with native calls and PTC image forwarding. Screenshots require an attachment store; missing storage or invalid images produce an explicit tool error without affecting text-only tools.
+
+Execution forwards the DSH cancellation signal through backend queues, connection handshakes, and MCP requests. Cancelled queued calls do not execute. Cancellation during a call or an MCP timeout closes that Agent's browser session and waits for cleanup; the next call reconnects without replaying the interrupted operation.
 
 ## Settings behavior
 
@@ -120,7 +122,7 @@ This is the only package in the family that directly changes model capabilities.
 - Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
 - The backend tool catalog is captured once per activation; settings changes do not add or remove tools.
 - Reconfiguration failures are warnings rather than an unhealthy plugin state, so tools may stay registered while the backend cannot connect.
-- The text renderer ignores non-text content blocks; callers still receive the original structured tool value.
+- Model output supports text and screenshots saved by the attachment service; other MCP blocks remain available in the raw tool value.
 - The settings client follows `ctx.locale.getLocale().active`: Chinese (including regional variants) uses Chinese copy; other locales use English. Navigation labels, fields, buttons, and validation update immediately without reloading settings, losing drafts, or interrupting saves and directory selection. Diagnostic details returned by external services retain their original text.
 
 ## Related documentation

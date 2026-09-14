@@ -65,7 +65,7 @@ A backend implementation must provide:
 
 - A stable `browserType` namespace used in published tool names.
 - A stable tool catalog from `tools()`; the Domain reads it once during activation.
-- `execute(owner, toolName, args)`, returning losslessly JSON-serializable output.
+- `execute(owner, toolName, args, signal?)`, returning losslessly JSON-serializable output; cancellation skips queued work and waits for active browser operations to stop before settling.
 - Idempotent `release(owner)` that removes only that owner's state.
 - `reconfigure(settings)`, which applies the latest settings snapshot and may recycle shared resources.
 - Idempotent asynchronous `close()`, resolving after all backend resources are released.

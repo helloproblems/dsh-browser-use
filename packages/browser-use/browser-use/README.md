@@ -65,7 +65,7 @@ unregister()
 
 - 稳定的 `browserType` 命名空间，用于生成公开工具名。
 - 由 `tools()` 返回的稳定工具目录；Domain 在激活时读取一次。
-- `execute(owner, toolName, args)`，返回可无损 JSON 序列化的结果。
+- `execute(owner, toolName, args, signal?)`，返回可无损 JSON 序列化的结果；取消时跳过排队工作，并等待已启动的浏览器操作停止后才结束调用。
 - 幂等的 `release(owner)`，只移除该 owner 的状态。
 - `reconfigure(settings)`，应用最新设置快照，并可按需重建共享资源。
 - 幂等异步 `close()`，在所有后端资源释放后 resolve。

@@ -59,7 +59,7 @@ corepack pnpm pack:bundle
 corepack pnpm verify:bundle
 ```
 
-Default tests include real MCP catalog discovery without launching a browser. Browser interaction tests opt in through EDGE_SMOKE=1, CHROME_SMOKE=1, and BROWSER_SWITCH_SMOKE=1 and require the relevant browsers. Report skipped checks and the actual validation platform.
+Default tests include real MCP catalog discovery without launching a browser. Browser interaction tests opt in through EDGE_SMOKE=1, CHROME_SMOKE=1, and BROWSER_SWITCH_SMOKE=1. BROWSER_LIFECYCLE_SMOKE=1 additionally checks cancellation during execution, stopping delayed operations, and reusing persistent profiles after cleanup in both browsers. These tests require the relevant browsers. Report skipped checks and the actual validation platform.
 
 Bundle packing uses a unique system temporary directory so pnpm cannot collect dependencies from the checkout's ancestor node_modules. The tarball includes the four workspace packages and their declarations, plus both development guides. External runtime dependencies and host peers are also declared on the bundle root because installers do not traverse bundled package manifests. Conflicting ranges fail packing. The temporary directory is removed on success or failure, and the tarball is written under .artifacts/pack.
 

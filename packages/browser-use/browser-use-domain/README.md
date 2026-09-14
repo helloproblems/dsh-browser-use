@@ -65,7 +65,9 @@ mcp__<backend.browserType>__<backend-tool-name>
 
 每个定义保留后端描述和 JSON Schema，应用 `toolCallTimeoutMs`，并把对象输入转发给 `backend.execute()`。发起调用的 `Agent` 对象成为不透明 owner。没有 Agent 的调用会以 `browser-use tools require an initiating DSH session` 失败。
 
-后端输出保留 MCP 风格的 `content` 数组和可选 `structuredContent`。DSH renderer 从 `content` 中提取文本块；没有文本块时显示 `(no textual output)`，同时仍把结构化结果保留为工具值。
+后端输出保留 MCP 风格的 `content` 数组和可选 `structuredContent`，供程序化调用读取。Domain 将截图通过 DSH `attachments` 服务保存为持久化附件，再按原顺序向模型提供文本和图片；原始 MCP 工具值保持不变。图片内容支持原生工具调用和 PTC 图片转发。截图要求宿主挂载附件服务；缺少服务或图片校验失败时明确报错，纯文本工具不受影响。
+
+执行时将 DSH 的取消信号传递至后端队列、连接握手及 MCP 请求。排队期间取消的调用不会执行；运行中的调用被取消或 MCP 请求超时时，会关闭该 Agent 的浏览器会话并等待清理完成，下次调用重新连接，不自动重放旧操作。
 
 ## 设置行为
 
@@ -124,7 +126,7 @@ mcp__<backend.browserType>__<backend-tool-name>
 - Edge 使用 Playwright MCP；启用两个后端插件后，可通过设置页热切换浏览器。
 - 后端工具目录在每次激活时只读取一次；设置变更不会增加或删除工具。
 - 重新配置失败只是 warning，而不是插件不健康状态，因此后端无法连接时工具仍可能保持注册。
-- 文本 renderer 忽略非文本内容块；调用方仍会收到原始结构化工具值。
+- 模型输出支持文本和通过附件服务保存的截图；其他 MCP 内容块仍保留在原始工具值中。
 - 设置客户端提供中文和英文文案；其他语言暂时回退英文。外部服务返回的诊断详情保留原文。
 
 ## 相关文档

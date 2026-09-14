@@ -82,12 +82,12 @@ describe('Chrome MCP', () => {
     await backend.reconfigure({ ...settings, headless: false, userDataDir: 'C:/Browser Data/Chrome' })
     expect(runtimes[4]!.close).toHaveBeenCalledOnce()
     await backend.execute(b, 'action', {})
-    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: join('C:/Browser Data/Chrome', 'workdirs', basename(process.cwd()), 'chrome') }), b)
+    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: join('C:/Browser Data/Chrome', 'workdirs', basename(process.cwd()), 'chrome') }), b, undefined)
     const isolated = { ...settings, headless: false, userDataDir: 'C:/Browser Data/Chrome', sessionIsolation: true }
     await backend.reconfigure(isolated)
     expect(runtimes[5]!.close).toHaveBeenCalledOnce()
     await backend.execute(b, 'action', {})
-    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: expect.stringMatching(/sessions[\\/]chrome[\\/][a-f0-9]{64}$/) }), b)
+    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: expect.stringMatching(/sessions[\\/]chrome[\\/][a-f0-9]{64}$/) }), b, undefined)
     backend.release(b)
     await backend.execute(b, 'action', {})
     const calls = vi.mocked(connect).mock.calls as unknown as [Record<string, unknown>, object][]

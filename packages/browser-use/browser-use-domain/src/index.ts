@@ -1,11 +1,13 @@
 import type { Context } from '@deepseek-ai/cordis'
+import { isDeepStrictEqual } from 'node:util'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
-import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
-import { browserUseBackendServiceKey, discoverBrowserExecutable, type BrowserUseBackend, type BrowserUseSettings } from 'browser-use'
+import type { ToolDefinition, ToolExecution, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import { browserUseBackendServiceKey, discoverBrowserExecutable, type BrowserUseBackend, type BrowserUseResult, type BrowserUseSettings } from 'browser-use'
 import { BackendSwitcher } from './backend-switcher.ts'
 import { registerBrowserPicker } from './browser-picker.ts'
 import { Config, SETTINGS_NAMESPACE, SettingsSchema, type Config as DomainConfig } from './config.ts'
+import { browserTextContent, prepareBrowserImages, type BrowserModelContent } from './output.ts'
 import type {} from '@deepseek-ai/dsh-settings'
 import type {} from '@deepseek-ai/dsh-tools'
 
@@ -13,20 +15,13 @@ export const name = 'browser-use-domain'
 export const inject = ['browserUse', 'tools']
 export { Config, SETTINGS_NAMESPACE }
 
-function textOf(content: JsonValue[]): string {
-  return content.flatMap((item) => {
-    if (typeof item !== 'object' || item === null || Array.isArray(item)) return []
-    const value = item as Record<string, JsonValue>
-    return value.type === 'text' && typeof value.text === 'string' ? [value.text] : []
-  }).join('\n')
-}
-
 function requireAgent(exec: ToolRunContext): Agent {
   if (!exec.agent) throw new Error('browser-use tools require an initiating DSH session')
   return exec.agent
 }
 
-function definition(backend: BrowserUseBackend, tool: ReturnType<BrowserUseBackend['tools']>[number], timeoutMs: number, execute: BrowserUseBackend['execute']): ToolDefinition {
+function definition(ctx: Context, backend: BrowserUseBackend, tool: ReturnType<BrowserUseBackend['tools']>[number], timeoutMs: number, execute: BrowserUseBackend['execute']): ToolDefinition {
+  const images = new WeakMap<Readonly<ToolExecution>, { value: BrowserUseResult; fallback: BrowserModelContent; content: BrowserModelContent }>()
   return {
     name: `mcp__${backend.browserType}__${tool.name}`,
     description: tool.description,
@@ -35,12 +30,24 @@ function definition(backend: BrowserUseBackend, tool: ReturnType<BrowserUseBacke
       schema: { type: 'object', properties: { content: { type: 'array', items: {} }, structuredContent: {} }, required: ['content'], additionalProperties: false },
       render(_args, value) {
         const result = value as unknown as { content: JsonValue[] }
-        return [{ type: 'text', text: textOf(result.content) || '(no textual output)' }]
+        return browserTextContent(result.content)
       },
     },
     timeoutMs,
     async execute(args, exec) {
-      return execute(requireAgent(exec), tool.name, (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>)
+      exec.signal.throwIfAborted()
+      const value = await execute(requireAgent(exec), tool.name, (typeof args === 'object' && args !== null ? args : {}) as Record<string, unknown>, exec.signal)
+      const content = await prepareBrowserImages(ctx, value.content, exec.signal)
+      if (content) images.set(exec, { value, fallback: browserTextContent(value.content), content })
+      return value
+    },
+    finalizeContent(exec, result) {
+      const prepared = images.get(exec)
+      images.delete(exec)
+      // A policy may cancel, reject, or replace the result after execute.
+      if (!prepared || result.isError || !isDeepStrictEqual(result.value, prepared.value)
+        || !isDeepStrictEqual(result.content, prepared.fallback)) return undefined
+      return prepared.content
     },
   }
 }
@@ -50,7 +57,7 @@ export function apply(ctx: Context, config: DomainConfig): void {
   const report = (error: unknown) => ctx.logger.warn('browser-use: ' + String(error))
   const switcher = new BackendSwitcher(base,
     settings => settings.browserType === config.browserType ? config.backend : settings.browserType,
-    (backend, tool, execute) => ctx.tools.register(definition(backend, tool, config.toolCallTimeoutMs, execute)),
+    (backend, tool, execute) => ctx.tools.register(definition(ctx, backend, tool, config.toolCallTimeoutMs, execute)),
   )
   ctx.effect(() => () => switcher.close())
   registerBrowserPicker(ctx)

@@ -47,6 +47,8 @@ The Agent workspace is supplied through MCP `roots/list` and used as the server 
 
 Releasing an Agent closes its MCP connection. The SDK ends stdin, and the upstream server closes the browser and exits. Path/headless changes recycle sessions. Hot switching releases old owners without permanently disposing the backend. Plugin disposal closes all connections. Calls and cleanup are serialized.
 
+`execute` accepts an optional cancellation signal. A cancelled queued call never starts its tool. Cancellation during execution forwards the signal to MCP and closes the owner's connection to stop browser work. MCP timeouts and connection errors also release that connection, and subsequent calls wait until cleanup completes.
+
 Failed connections are not cached. An unexpected server exit fails the current call; a later call reconnects without replaying potentially side-effecting operations.
 
 ## Verification

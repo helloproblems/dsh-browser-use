@@ -32,16 +32,38 @@ export class EdgeBrowserUseBackend implements BrowserUseBackend {
 
   tools(): readonly BrowserUseTool[] { return this.catalog }
 
-  execute(owner: object, toolName: string, args: Record<string, unknown>): Promise<BrowserUseResult> {
+  execute(owner: object, toolName: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<BrowserUseResult> {
     if (this.disposed) return Promise.reject(new Error('Edge browser-use backend is disposed'))
     return this.enqueue(async () => {
+      signal?.throwIfAborted()
+      if (this.disposed) throw new Error('Edge browser-use backend is disposed')
       if (!this.catalog.some(tool => tool.name === toolName)) throw new Error(`unknown Edge tool '${toolName}'`)
       let runtime = this.sessions.get(owner)
-      if (!runtime) {
-        runtime = await this.connect(sessionBrowserSettings(this.settings, owner), owner)
+      if (!runtime || runtime.closed) {
+        this.sessions.delete(owner)
+        await runtime?.close()
+        signal?.throwIfAborted()
+        runtime = await this.connect(sessionBrowserSettings(this.settings, owner), owner, signal)
         this.sessions.set(owner, runtime)
       }
-      const result = await runtime.client.callTool({ name: toolName, arguments: args }, undefined, { timeout: this.config.toolCallTimeoutMs })
+      const result = await (async () => {
+        try {
+          signal?.throwIfAborted()
+          const result = await runtime.client.callTool({ name: toolName, arguments: args }, undefined,
+            { timeout: this.config.toolCallTimeoutMs, ...(signal ? { signal } : {}) })
+          signal?.throwIfAborted()
+          return result
+        } catch (error) {
+          // Drain browser work even when the MCP request has already rejected.
+          this.sessions.delete(owner)
+          await runtime.close()
+          throw error
+        }
+      })()
+      if (toolName === 'browser_close' && !result.isError) {
+        this.sessions.delete(owner)
+        await runtime.close()
+      }
       const content = (result.content ?? []) as BrowserUseResult['content']
       if (result.isError) {
         const message = content.flatMap(item => item && typeof item === 'object' && !Array.isArray(item) && item.type === 'text' ? [String(item.text)] : []).join('\n')

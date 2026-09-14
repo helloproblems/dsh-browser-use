@@ -77,7 +77,7 @@ corepack pnpm pack:bundle
 corepack pnpm verify:bundle
 ```
 
-默认测试包含真实 MCP 工具目录发现，不启动浏览器。浏览器交互测试通过 EDGE_SMOKE=1、CHROME_SMOKE=1 和 BROWSER_SWITCH_SMOKE=1 显式启用，要求安装对应浏览器。报告实际验证平台和跳过的检查。
+默认测试包含真实 MCP 工具目录发现，不启动浏览器。浏览器交互测试通过 EDGE_SMOKE=1、CHROME_SMOKE=1 和 BROWSER_SWITCH_SMOKE=1 显式启用；BROWSER_LIFECYCLE_SMOKE=1 额外验证两个浏览器的运行中取消、延迟操作停止和持久化目录释放后复用。以上测试要求安装对应浏览器。报告实际验证平台和跳过的检查。
 
 修改 Windows 路径选择器后，在交互桌面运行 `node --test scripts/tests/windows-picker-smoke.mjs`。此检查会真实打开文件和文件夹对话框，验证可见性、前台激活、选择及取消，并自动关闭测试弹窗。
 

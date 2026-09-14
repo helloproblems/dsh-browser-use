@@ -79,12 +79,13 @@ export class BackendSwitcher {
     const next: Active = { backend, settings, owners: new Set(), unregister: [] }
     try {
       for (const tool of backend.tools()) {
-        next.unregister.push(this.publish(backend, tool, (owner, name, args) => this.enqueue(async () => {
+        next.unregister.push(this.publish(backend, tool, (owner, name, args, signal) => this.enqueue(async () => {
+          signal?.throwIfAborted()
           if (this.stopped || this.active !== next || ![...this.available.values()].includes(backend)) {
             throw new Error('Browser backend changed; refresh the tool list and retry with the active browser tools')
           }
           next.owners.add(owner)
-          return backend.execute(owner, name, args)
+          return backend.execute(owner, name, args, signal)
         })))
       }
     } catch (error) {

@@ -22,6 +22,7 @@ describe('Edge MCP backend', () => {
     const runtimes: { close: ReturnType<typeof vi.fn>; client: Client }[] = []
     const connect = vi.fn(async () => {
       const runtime = {
+        closed: false,
         close: vi.fn(async () => {}),
         client: {
           listTools: vi.fn(async () => ({ tools: [{ name: 'action', inputSchema: { type: 'object' } }] })),
@@ -57,11 +58,11 @@ describe('Edge MCP backend', () => {
     await backend.reconfigure({ ...settings, userDataDir: 'C:/Browser Data/Edge' })
     expect(runtimes[3]!.close).toHaveBeenCalledOnce()
     await backend.execute(b, 'action', {})
-    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: join('C:/Browser Data/Edge', 'workdirs', basename(process.cwd()), 'edge') }), b)
+    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: join('C:/Browser Data/Edge', 'workdirs', basename(process.cwd()), 'edge') }), b, undefined)
     await backend.reconfigure({ ...settings, userDataDir: 'C:/Browser Data/Edge', sessionIsolation: true })
     expect(runtimes[4]!.close).toHaveBeenCalledOnce()
     await backend.execute(b, 'action', {})
-    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: expect.stringMatching(/sessions[\\/]edge[\\/][a-f0-9]{64}$/) }), b)
+    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: expect.stringMatching(/sessions[\\/]edge[\\/][a-f0-9]{64}$/) }), b, undefined)
     await backend.close()
     await backend.close()
     expect(runtimes[3]!.close).toHaveBeenCalledOnce()

@@ -12,7 +12,7 @@ export interface ChromeRuntime {
   readonly closed: boolean
   close(): Promise<void>
 }
-export type ChromeConnector = (settings: BrowserUseSettings, owner: object) => Promise<ChromeRuntime>
+export type ChromeConnector = (settings: BrowserUseSettings, owner: object, signal?: AbortSignal) => Promise<ChromeRuntime>
 
 /** Resolve the installed package's declared CLI, rather than importing internals. */
 export function chromeServerArgs(settings: BrowserUseSettings): string[] {
@@ -33,7 +33,8 @@ export function chromeServerArgs(settings: BrowserUseSettings): string[] {
   ]
 }
 
-export async function connectChrome(settings: BrowserUseSettings, owner: object, log: (message: string) => void): Promise<ChromeRuntime> {
+export async function connectChrome(settings: BrowserUseSettings, owner: object, log: (message: string) => void, signal?: AbortSignal): Promise<ChromeRuntime> {
+  signal?.throwIfAborted()
   const metadata = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
   const cwd = browserWorkdir(owner)
   const client = new Client({ name: 'dsh-browser-use-chrome', version: metadata.version }, { capabilities: { roots: {} } })
@@ -53,7 +54,8 @@ export async function connectChrome(settings: BrowserUseSettings, owner: object,
     return closing ??= client.close().finally(() => transport.close())
   }
   try {
-    await client.connect(transport, { timeout: 30_000 })
+    await client.connect(transport, { timeout: 30_000, ...(signal ? { signal } : {}) })
+    signal?.throwIfAborted()
     return { client, get closed() { return closed }, close }
   } catch (error) {
     await close().catch(() => {})

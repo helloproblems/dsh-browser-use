@@ -20,7 +20,7 @@ export class ChromeBrowserUseBackend implements BrowserUseBackend {
 
   constructor(settings: () => BrowserUseSettings, private readonly logger: Context['logger'], private readonly config: ChromeConfig, connect?: ChromeConnector) {
     this.settings = { ...settings() }
-    this.connect = connect ?? ((settings, owner) => connectChrome(settings, owner, message => logger.debug(message)))
+    this.connect = connect ?? ((settings, owner, signal) => connectChrome(settings, owner, message => logger.debug(message), signal))
   }
 
   initialize(): Promise<void> {
@@ -44,19 +44,35 @@ export class ChromeBrowserUseBackend implements BrowserUseBackend {
 
   tools(): readonly BrowserUseTool[] { return this.catalog }
 
-  execute(owner: object, toolName: string, args: Record<string, unknown>): Promise<BrowserUseResult> {
+  execute(owner: object, toolName: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<BrowserUseResult> {
     if (this.disposed) return Promise.reject(new Error('Chrome browser-use backend is disposed'))
     return this.enqueue(async () => {
+      signal?.throwIfAborted()
+      this.assertActive()
       if (!this.initialized) throw new Error('Chrome MCP backend is not initialized')
       if (!this.catalog.some(tool => tool.name === toolName)) throw new Error(`unknown Chrome tool '${toolName}'`)
       let runtime = this.sessions.get(owner)
       if (!runtime || runtime.closed) {
         this.sessions.delete(owner)
         await runtime?.close()
-        runtime = await this.connect(sessionBrowserSettings(this.settings, owner), owner)
+        signal?.throwIfAborted()
+        runtime = await this.connect(sessionBrowserSettings(this.settings, owner), owner, signal)
         this.sessions.set(owner, runtime)
       }
-      const result = await runtime.client.callTool({ name: toolName, arguments: args }, undefined, { timeout: this.config.toolCallTimeoutMs })
+      const result = await (async () => {
+        try {
+          signal?.throwIfAborted()
+          const result = await runtime.client.callTool({ name: toolName, arguments: args }, undefined,
+            { timeout: this.config.toolCallTimeoutMs, ...(signal ? { signal } : {}) })
+          signal?.throwIfAborted()
+          return result
+        } catch (error) {
+          // MCP cancellation can reject before Chrome stops executing the tool.
+          this.sessions.delete(owner)
+          await runtime.close()
+          throw error
+        }
+      })()
       const content = (result.content ?? []) as BrowserUseResult['content']
       if (result.isError) {
         const message = content.flatMap(item => item && typeof item === 'object' && !Array.isArray(item) && item.type === 'text' ? [String(item.text)] : []).join('\n')

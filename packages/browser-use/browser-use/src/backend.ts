@@ -57,9 +57,10 @@ export interface BrowserUseBackend {
 
   /**
    * Execute one catalog tool for an opaque owner. Backends may use owner object
-   * identity to isolate sessions and reuse their browser context.
+   * identity to isolate sessions and reuse their browser context. Cancellation
+   * skips queued work and settles only after active browser work has stopped.
    */
-  execute(owner: object, toolName: string, args: Record<string, unknown>): Promise<BrowserUseResult>
+  execute(owner: object, toolName: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<BrowserUseResult>
 
   /**
    * Release resources associated with one owner. Repeated calls are harmless
