@@ -1,4 +1,4 @@
-import { relative, resolve } from 'node:path'
+import { join, parse, relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { browserWorkdir, sessionBrowserSettings } from '../src/profile.ts'
 import type { BrowserUseSettings } from '../src/backend.ts'
@@ -16,7 +16,7 @@ describe('session profile directories', () => {
   })
   it('keeps unsafe session IDs contained inside the browser directory', () => {
     const path = sessionBrowserSettings(settings, owner('../../C:\\evil')).userDataDir!
-    expect(relative('/profiles', path).replace(/\\/g, '/')).toMatch(/^workdirs\/[a-f0-9]{64}\/sessions\/chrome\/[a-f0-9]{64}$/)
+    expect(relative('/profiles', path).replace(/\\/g, '/')).toMatch(/^workdirs\/workspace\/sessions\/chrome\/[a-f0-9]{64}$/)
   })
   it('isolates owners without IDs and keeps their directory stable', () => {
     const first = {}, second = {}
@@ -39,5 +39,15 @@ describe('session profile directories', () => {
   it('uses the execution owner workspace before the process directory', () => {
     expect(browserWorkdir(owner('one', '/project-a'))).toBe(resolve('/project-a'))
     expect(browserWorkdir({})).toBe(resolve(process.cwd()))
+  })
+  it('uses the directory name, including spaces and Unicode, and shares matching names', () => {
+    const config = { ...settings, sessionIsolation: false }
+    const first = sessionBrowserSettings(config, owner('one', '/parent/我的 project')).userDataDir
+    expect(first).toBe(join('/profiles', 'workdirs', '我的 project', 'chrome'))
+    expect(sessionBrowserSettings(config, owner('two', '/other/我的 project')).userDataDir).toBe(first)
+  })
+  it('uses a root fallback when the workspace has no directory name', () => {
+    expect(sessionBrowserSettings({ ...settings, sessionIsolation: false }, owner('one', parse(resolve('/')).root)).userDataDir)
+      .toBe(join('/profiles', 'workdirs', 'root', 'chrome'))
   })
 })

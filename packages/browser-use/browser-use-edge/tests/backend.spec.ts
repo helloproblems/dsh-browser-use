@@ -1,3 +1,4 @@
+import { basename, join } from 'node:path'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { describe, expect, it, vi } from 'vitest'
@@ -56,7 +57,7 @@ describe('Edge MCP backend', () => {
     await backend.reconfigure({ ...settings, userDataDir: 'C:/Browser Data/Edge' })
     expect(runtimes[3]!.close).toHaveBeenCalledOnce()
     await backend.execute(b, 'action', {})
-    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: expect.stringMatching(/workdirs[\\/][a-f0-9]{64}[\\/]edge$/) }), b)
+    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: join('C:/Browser Data/Edge', 'workdirs', basename(process.cwd()), 'edge') }), b)
     await backend.reconfigure({ ...settings, userDataDir: 'C:/Browser Data/Edge', sessionIsolation: true })
     expect(runtimes[4]!.close).toHaveBeenCalledOnce()
     await backend.execute(b, 'action', {})

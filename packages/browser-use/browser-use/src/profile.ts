@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { join, resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import type { BrowserUseSettings } from './backend.ts'
 
 const anonymousOwners = new WeakMap<object, string>()
@@ -15,7 +15,7 @@ export function sessionBrowserSettings(settings: BrowserUseSettings, owner: obje
   const root = settings.userDataDir?.trim()
   if (!root) return { ...settings }
   const cwd = browserWorkdir(owner)
-  const workdir = createHash('sha256').update(process.platform === 'win32' ? cwd.toLowerCase() : cwd).digest('hex')
+  const workdir = basename(cwd) || 'root'
   const workspaceRoot = join(root, 'workdirs', workdir)
   if (!settings.sessionIsolation) return { ...settings, userDataDir: join(workspaceRoot, settings.browserType) }
   const sessionId = (owner as { session?: { id?: unknown } }).session?.id

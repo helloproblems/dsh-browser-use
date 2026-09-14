@@ -47,11 +47,11 @@ Domain 拥有工具名、工具超时、设置和 Agent 生命周期。它不连
 
 `backend` 与 `toolCallTimeoutMs` 属于组合配置。暴露给 DSH GUI 的设置命名空间包含 `headless`、`browserType`、`browserPath`、`userDataDir` 和 `sessionIsolation`。
 
-修改用户数据目录或数据隔离级别会释放旧会话，下次调用时使用新配置；已有数据不会被删除。工作目录取自工具执行上下文的 `agent.session.header.cwd`，缺失时回退到 `process.cwd()`。路径规范化后计算 SHA-256，Windows 下忽略路径大小写。
+修改用户数据目录或数据隔离级别会释放旧会话，下次调用时使用新配置；已有数据不会被删除。工作目录取自工具执行上下文的 `agent.session.header.cwd`，缺失时回退到 `process.cwd()`。路径规范化后直接使用最后一级文件夹名称（根目录使用 `root`），不再计算工作目录哈希。不同路径下的同名工作目录会共用这一层目录。旧哈希目录的数据保留，但不会自动迁移到新目录。
 
-开启 `sessionIsolation` 后，目录为 `<userDataDir>/workdirs/<工作目录哈希>/sessions/<chrome|edge>/<会话标识哈希>`。不同工作目录、会话和浏览器不共享数据，同一工作目录中的同一会话恢复后复用目录。没有会话 ID 的调用按 owner 对象分配随机标识，仅在进程内保持稳定。不会将原目录的登录数据复制到隔离目录。
+开启 `sessionIsolation` 后，目录为 `<userDataDir>/workdirs/<工作目录名称>/sessions/<chrome|edge>/<会话标识哈希>`。不同名称的工作目录、会话和浏览器不共享数据，同一工作目录中的同一会话恢复后复用目录。没有会话 ID 的调用按 owner 对象分配随机标识，仅在进程内保持稳定。不会将原目录的登录数据复制到隔离目录。
 
-选择“工作区”时使用 `<userDataDir>/workdirs/<工作目录哈希>/<chrome|edge>`，仍保持工作目录和浏览器隔离；同一目录同时只能供一个浏览器会话使用。目录留空时，无论隔离级别均继续按 Agent 使用临时隔离会话。DSH GUI 的“数据隔离级别”提供“工作区 / 会话”选项，兼容已有的 `sessionIsolation` 布尔配置。
+选择“工作区”时使用 `<userDataDir>/workdirs/<工作目录名称>/<chrome|edge>`，按工作目录名称和浏览器隔离；同一目录同时只能供一个浏览器会话使用。目录留空时，无论隔离级别均继续按 Agent 使用临时隔离会话。DSH GUI 的“数据隔离级别”提供“工作区 / 会话”选项，兼容已有的 `sessionIsolation` 布尔配置。
 
 ## 工具发布
 

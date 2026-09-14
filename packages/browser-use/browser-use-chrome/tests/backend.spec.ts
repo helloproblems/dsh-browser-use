@@ -1,3 +1,4 @@
+import { basename, join } from 'node:path'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
 import { Context } from '@deepseek-ai/cordis'
@@ -81,7 +82,7 @@ describe('Chrome MCP', () => {
     await backend.reconfigure({ ...settings, headless: false, userDataDir: 'C:/Browser Data/Chrome' })
     expect(runtimes[4]!.close).toHaveBeenCalledOnce()
     await backend.execute(b, 'action', {})
-    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: expect.stringMatching(/workdirs[\\/][a-f0-9]{64}[\\/]chrome$/) }), b)
+    expect(connect).toHaveBeenLastCalledWith(expect.objectContaining({ userDataDir: join('C:/Browser Data/Chrome', 'workdirs', basename(process.cwd()), 'chrome') }), b)
     const isolated = { ...settings, headless: false, userDataDir: 'C:/Browser Data/Chrome', sessionIsolation: true }
     await backend.reconfigure(isolated)
     expect(runtimes[5]!.close).toHaveBeenCalledOnce()
