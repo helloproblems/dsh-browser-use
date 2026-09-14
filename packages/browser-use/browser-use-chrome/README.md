@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 接入方式
 
-本包使用官方 MCP SDK 的 `Client` 与 `StdioClientTransport`，启动已安装的 `chrome-devtools-mcp@1.8.0` 命令行服务。入口从依赖 package.json 的 `bin` 字段解析；运行时不下载包、不导入上游内部工具模块，也不开放监听端口。
+本包使用官方 MCP SDK 的 `Client` 与 `StdioClientTransport`，启动已安装的 `chrome-devtools-mcp` 命令行服务。入口从依赖 package.json 的 `bin` 字段解析；运行时不下载包、不导入上游内部工具模块，也不开放监听端口。
 
 ```text
 DSH Domain → MCP Client → stdin/stdout JSON-RPC → chrome-devtools-mcp → Chrome

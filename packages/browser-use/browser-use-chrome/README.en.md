@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## Integration
 
-The official MCP SDK `Client` and `StdioClientTransport` launch the installed `chrome-devtools-mcp@1.8.0` CLI. Its entry point is resolved from the dependency's declared `bin` field. No runtime package download, listening port or upstream internal tool imports are required.
+The official MCP SDK `Client` and `StdioClientTransport` launch the installed `chrome-devtools-mcp` CLI. Its entry point is resolved from the dependency's declared `bin` field. No runtime package download, listening port or upstream internal tool imports are required.
 
 ```text
 DSH Domain → MCP Client → stdin/stdout JSON-RPC → chrome-devtools-mcp → Chrome
