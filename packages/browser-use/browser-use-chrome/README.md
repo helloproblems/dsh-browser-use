@@ -17,11 +17,11 @@ DSH Domain → MCP Client → stdin/stdout JSON-RPC → chrome-devtools-mcp → 
 
 初始化完成 MCP 握手，通过 `tools/list` 获取工具名称、描述和原始 JSON Schema，随后关闭用于发现目录的连接。此时不启动 Chrome。工具调用通过 `tools/call` 完成，保留 `content` 与 `structuredContent`，将 `isError` 转为工具执行错误。客户端版本号从本包 package.json 读取。
 
-Domain 继续发布 `mcp__chrome__*` 工具，包括 `new_page`、`click`、`take_snapshot` 等；不需要迁移到 Playwright 工具名称。输入 schema 直接来自服务器，已移除旧 Zod 转换器和内部模块类型声明。
+Domain 将本后端工具发布为 `mcp__chrome__*`，包括 `new_page`、`click`、`take_snapshot` 等。输入 schema 直接来自服务器。
 
 ## 配置
 
-默认 bundle 选择 Chrome，同时启用 Edge 以支持设置页热切换。Chrome 单后端组合：
+本后端通过 Hub 注册为 `chrome`，并由 Domain 发布工具。挂载示例：
 
 ```yaml
 - name: browser-use
@@ -54,7 +54,7 @@ Domain 继续发布 `mcp__chrome__*` 工具，包括 `new_page`、`click`、`tak
 
 Agent 的 `session.header.cwd` 通过 MCP `roots/list` 传递，同时用作服务工作目录；没有该字段时使用 Host 工作目录。标准输出只用于 MCP 协议，标准错误单独接入 debug 日志。关闭使用统计、CrUX 查询与更新检查；保留网络请求头脱敏与文件路径限制。
 
-`release(owner)` 关闭该 Agent 的 MCP 连接，SDK 关闭 stdin，上游服务负责关闭浏览器并退出。`browserPath`、`headless`、`userDataDir` 或 `sessionIsolation` 改变时回收所有会话。热切换释放旧 owner 会话，但保留后端可再次激活；插件销毁最终关闭全部连接。调用与清理串行执行，避免在工具执行中途回收资源。
+`release(owner)` 关闭该 Agent 的 MCP 连接，SDK 关闭 stdin，上游服务负责关闭浏览器并退出。`browserPath`、`headless`、`userDataDir` 或 `sessionIsolation` 改变时回收所有会话。释放单个 owner 后，后端仍可处理新调用并重新建立连接；插件销毁最终关闭全部连接。调用与清理串行执行，避免在工具执行中途回收资源。
 
 连接建立失败不会缓存失败实例。服务意外退出后，当前调用报错，下一次调用重新连接；不会自动重放可能已产生副作用的操作。
 
@@ -65,14 +65,12 @@ Agent 的 `session.header.cwd` 通过 MCP `roots/list` 传递，同时用作服�
 ```powershell
 pnpm typecheck
 pnpm build
-pnpm test
+pnpm test packages/browser-use/browser-use-chrome/tests
 $env:CHROME_SMOKE='1'
-$env:EDGE_SMOKE='1'
-$env:BROWSER_SWITCH_SMOKE='1'
-pnpm test
+pnpm test packages/browser-use/browser-use-chrome/tests
 ```
 
-普通测试会启动真实 MCP 服务并获取 schema，但不会启动浏览器。可选测试覆盖真实 Chrome 导航、脚本执行、Agent 存储隔离、释放后重建，以及 Edge → Chrome → Edge 热切换。
+从仓库根目录运行上述命令。普通测试会启动真实 MCP 服务并获取 schema，但不会启动浏览器。`CHROME_SMOKE=1` 可选测试覆盖真实 Chrome 导航、脚本执行、Agent 存储隔离和释放后重建。
 
 实现见 `src/index.ts`（目录、执行和生命周期）、`src/connection.ts`（stdio 连接、CLI 参数与 roots）和 `tests/backend.spec.ts`。依赖版本固定，升级仍需验证公开 CLI 参数和工具协议兼容性。
 

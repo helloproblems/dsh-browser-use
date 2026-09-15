@@ -12,7 +12,7 @@ The backend owns its browser and context through the matching `playwright-core` 
 
 Initialization discovers the catalog using `tools/list` without launching a browser. Domain publishes `mcp__edge__browser_*` tools. Each Agent lazily gets an independent MCP connection and isolated browser session. `tools/call` preserves content blocks and structured results; MCP `isError` becomes an execution error.
 
-The shipped bundle enables both backends and initially selects Chrome. Switch to Edge through settings; an Edge-only composition is shown below:
+This backend registers as `edge` through the Hub, and Domain publishes its tools. Mount it as follows:
 
 ```yaml
 - name: browser-use
@@ -28,7 +28,7 @@ The shipped bundle enables both backends and initially selects Chrome. Switch to
     toolCallTimeoutMs: 120000
 ```
 
-An empty path selects system Edge. Changing browser type in settings preserves the entered path. If it does not match the new type, clear it for automatic discovery or select the correct executable before saving. Saving switches backends without restarting. Stored user settings override bundle defaults.
+An empty `browserPath` selects system Edge; a non-empty path selects that executable. This backend receives connection and data isolation settings through `reconfigure(settings)`; see [Domain settings](../browser-use-domain/README.en.md#settings-behavior) for GUI behavior.
 
 Agent disposal closes its session. Changes to `browserPath`, `headless`, `userDataDir`, or `sessionIsolation` recycle all sessions; plugin disposal closes all connections. Calls and lifecycle operations are serialized, including calls from different Agents. Backend `toolCallTimeoutMs` controls MCP request timeout (default 120 seconds); Domain timeout is configured separately.
 
@@ -36,7 +36,7 @@ Workspace paths are sent via MCP roots. Core tools are enabled, and Domain deliv
 
 `execute` accepts an optional cancellation signal. Cancelled queued calls do not execute. Cancellation during execution or an MCP timeout closes the owner's browser session and drains cleanup before the queue continues. The next call creates a new session without replaying interrupted operations.
 
-Run `pnpm typecheck`, `pnpm test`, and `pnpm build`. Set `EDGE_SMOKE=1` for the optional installed-Edge test covering local-page navigation, clicks and per-Agent storage isolation. Ordinary tests exercise real MCP tool discovery and mocked lifecycle behavior.
+From the repository root, run `pnpm typecheck`, `pnpm test packages/browser-use/browser-use-edge/tests`, and `pnpm build`. Set `EDGE_SMOKE=1` and repeat the package test command for the optional installed-Edge test covering local-page navigation, clicks and per-Agent storage isolation. Ordinary tests exercise real MCP tool discovery and mocked lifecycle behavior.
 
 ## Source layout
 
@@ -44,4 +44,4 @@ Run `pnpm typecheck`, `pnpm test`, and `pnpm build`. Set `EDGE_SMOKE=1` for the 
 - `connection.ts`: MCP connection, workspace roots and cleanup; client version is read from package.json.
 - `index.ts`: plugin registration, tool catalog, execution and Agent lifecycle.
 
-Executable discovery and its tests belong to the Hub. Both browser backends use this three-file layout.
+Executable discovery and its tests belong to the Hub.

@@ -17,11 +17,11 @@ DSH Domain → MCP Client → stdin/stdout JSON-RPC → chrome-devtools-mcp → 
 
 Initialization performs an MCP handshake and `tools/list`, preserving names, descriptions and original JSON Schema, then closes the discovery connection without launching Chrome. Execution uses `tools/call`, preserving `content` and `structuredContent` and rejecting MCP `isError` results. Client version metadata comes from this package's package.json.
 
-Domain still publishes `mcp__chrome__*`, including `new_page`, `click` and `take_snapshot`. No migration to Playwright tool names is needed. Schemas now come directly from the server; the old Zod converter and internal module declarations were removed.
+Domain publishes this backend's tools as `mcp__chrome__*`, including `new_page`, `click` and `take_snapshot`. Input schemas come directly from the server.
 
 ## Configuration
 
-The default bundle selects Chrome and enables Edge for hot switching. A Chrome-only composition:
+This backend registers as `chrome` through the Hub, and Domain publishes its tools. Mount it as follows:
 
 ```yaml
 - name: browser-use
@@ -51,7 +51,7 @@ See [Domain configuration](../browser-use-domain/README.en.md#configuration) for
 
 The Agent workspace is supplied through MCP `roots/list` and used as the server cwd, falling back to the Host cwd. stdout is reserved for MCP; stderr is drained into debug logs. Usage statistics, CrUX and update checks are disabled; network header redaction and file path restrictions remain enabled.
 
-Releasing an Agent closes its MCP connection. The SDK ends stdin, and the upstream server closes the browser and exits. Changes to `browserPath`, `headless`, `userDataDir`, or `sessionIsolation` recycle all sessions. Hot switching releases old owners without permanently disposing the backend. Plugin disposal closes all connections. Calls and cleanup are serialized.
+Releasing an Agent closes its MCP connection. The SDK ends stdin, and the upstream server closes the browser and exits. Changes to `browserPath`, `headless`, `userDataDir`, or `sessionIsolation` recycle all sessions. After releasing an owner, the backend remains available for new calls and can establish a new connection. Plugin disposal closes all connections. Calls and cleanup are serialized.
 
 `execute` accepts an optional cancellation signal. A cancelled queued call never starts its tool. Cancellation during execution forwards the signal to MCP and closes the owner's connection to stop browser work. MCP timeouts and connection errors also release that connection, and subsequent calls wait until cleanup completes.
 
@@ -59,7 +59,7 @@ Failed connections are not cached. An unexpected server exit fails the current c
 
 ## Verification
 
-Run `pnpm typecheck`, `pnpm build` and `pnpm test`. Ordinary tests launch the real MCP server for schema discovery, without launching a browser. Set `CHROME_SMOKE=1`, `EDGE_SMOKE=1` and `BROWSER_SWITCH_SMOKE=1` for installed-browser tests covering Chrome navigation, script execution, Agent storage isolation, release/recreation and Edge → Chrome → Edge switching.
+From the repository root, run `pnpm typecheck`, `pnpm build` and `pnpm test packages/browser-use/browser-use-chrome/tests`. Ordinary tests launch the real MCP server for schema discovery, without launching a browser. Set `CHROME_SMOKE=1` and repeat the package test command for installed-browser tests covering Chrome navigation, script execution, Agent storage isolation and release/recreation.
 
 See `src/index.ts` for catalog/execution/lifecycle, `src/connection.ts` for stdio/CLI/roots, and `tests/backend.spec.ts` for validation. Dependencies remain pinned; upgrades require verifying public CLI and protocol compatibility.
 

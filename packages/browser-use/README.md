@@ -28,7 +28,7 @@ browser-use-edge   ─┼─ 注册实现 ─> browser-use Hub
 browser-use-domain ─┘  解析所选后端 ─> DSH 工具/设置
 ```
 
-三个叶子包都依赖 Hub 契约。后端不依赖 Domain，Domain 也不导入具体后端。这样既能替换浏览器资源实现，又能保持唯一的 DSH 工具语义层。
+三个叶子包都依赖 Hub 契约。后端彼此不导入、不依赖，也不依赖 Domain。Domain 通过 Hub 注册表选择和切换后端，不导入具体实现。这样既能替换浏览器资源实现，又能保持唯一的 DSH 工具语义层。
 
 ## 分层所有权
 

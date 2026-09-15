@@ -73,6 +73,8 @@ Execution forwards the DSH cancellation signal through backend queues, connectio
 
 The Host registers settings namespace `browser-use` when `ctx.settings` is available. Empty paths select automatic executable discovery without persisting the detected path. Browser-type changes replace the tool catalog; other changes reconfigure the active backend. Settings updates are serialized and failures are logged as warnings.
 
+Changing browser type in settings preserves the entered path. If it does not match the new type, clear it for automatic discovery or select the correct executable before saving. Domain switches backends after saving, without restarting. Stored user settings override composition defaults.
+
 The client module registers a settings section with:
 
 - Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.

@@ -12,7 +12,7 @@ packages/browser-use/
   browser-use-edge/     Edge via Playwright MCP
 scripts/                Build, packaging, and smoke checks
 docs/                   Bilingual guides; demos in assets/
-cordis.patch.yml         Bundle composition
+cordis.patch.yml        Bundle composition
 ```
 
 Each package owns `src/` and `tests/`; client tests belong in `tests/client/`. `lib/`, `.cache/`, and `.artifacts/` are generated.
@@ -48,6 +48,7 @@ Never commit credentials, `.env`, or browser profile data. Configure browser pat
 - Use camelCase functions/variables, PascalCase types/components, and kebab-case filenames.
 - Import package names across packages and `.ts` paths locally.
 - Keep browser I/O outside the Hub and concrete backend imports outside the Domain. Register Cordis contributions through effects with disposers.
+- Backend packages must not import or depend on each other.
 
 ## Defensive patterns
 

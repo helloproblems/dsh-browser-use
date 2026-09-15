@@ -12,7 +12,7 @@ DSH Domain → MCP Client → InMemoryTransport (JSON-RPC) → @playwright/mcp �
 
 初始化时通过 `tools/list` 获取稳定工具目录，不启动浏览器。Domain 发布 `mcp__edge__browser_*` 工具；首次调用时才启动 Edge。每个 Agent 拥有独立 MCP 连接与隔离浏览器会话。工具调用使用 `tools/call`，保留内容块和结构化结果，将 MCP `isError` 转为执行错误。
 
-默认 bundle 同时启用 Chrome 与 Edge，初始选择 Chrome。可在设置页热切换到 Edge；仅使用 Edge 的组合示例：
+本后端通过 Hub 注册为 `edge`，并由 Domain 发布工具。挂载示例：
 
 ```yaml
 - name: browser-use
@@ -28,7 +28,7 @@ DSH Domain → MCP Client → InMemoryTransport (JSON-RPC) → @playwright/mcp �
     toolCallTimeoutMs: 120000
 ```
 
-空路径使用系统 Edge。设置页切换浏览器类型会保留已填写的路径；若路径与新类型不匹配，需要清空路径以自动发现，或重新选择对应的可执行文件后才能保存。保存后热切换后端，无需重启。已有用户设置优先于 bundle 默认值。
+`browserPath` 为空时使用系统 Edge，非空时使用指定可执行文件。本后端通过 `reconfigure(settings)` 接收连接与数据隔离设置；GUI 行为见 [Domain 设置](../browser-use-domain/README.md#设置行为)。
 
 Agent 销毁关闭该 Agent 的会话；`browserPath`、`headless`、`userDataDir` 或 `sessionIsolation` 改变时回收所有会话；插件销毁关闭所有连接。生命周期与工具执行串行化，避免执行中途清理；目前不同 Agent 的工具调用也串行执行。后端 `toolCallTimeoutMs` 控制 MCP 请求超时，默认 120 秒；Domain 超时独立配置。
 
@@ -38,13 +38,13 @@ Agent 销毁关闭该 Agent 的会话；`browserPath`、`headless`、`userDataDi
 
 ```powershell
 pnpm typecheck
-pnpm test
+pnpm test packages/browser-use/browser-use-edge/tests
 $env:EDGE_SMOKE='1'
-pnpm test
+pnpm test packages/browser-use/browser-use-edge/tests
 pnpm build
 ```
 
-普通测试检查真实 MCP 工具目录和模拟会话生命周期。`EDGE_SMOKE=1` 额外启动本机无头 Edge，验证本地页面导航、点击和 Agent 存储隔离。
+从仓库根目录运行上述命令。普通测试检查真实 MCP 工具目录和模拟会话生命周期。`EDGE_SMOKE=1` 额外启动本机无头 Edge，验证本地页面导航、点击和 Agent 存储隔离。
 
 ## 源码结构
 
@@ -52,4 +52,4 @@ pnpm build
 - `connection.ts`：MCP 连接、workspace roots 与连接清理；客户端版本从 package.json 读取。
 - `index.ts`：插件注册、工具目录、执行与 Agent 生命周期。
 
-浏览器路径发现及其测试归 Hub 管理。Chrome 与 Edge 均采用这三个源码文件。
+浏览器路径发现及其测试归 Hub 管理。

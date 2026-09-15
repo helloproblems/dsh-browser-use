@@ -28,7 +28,7 @@ browser-use-edge   ─┼─ register implementations ─> browser-use Hub
 browser-use-domain ─┘  resolve selected backend  ─> DSH tools/settings
 ```
 
-All three leaf packages depend on the Hub contract. Backends do not depend on the Domain, and the Domain does not import a concrete backend. This keeps browser resource ownership replaceable while preserving one DSH-facing tool layer.
+All three leaf packages depend on the Hub contract. Backends neither import nor depend on each other or the Domain. The Domain selects and switches backends through the Hub registry without importing concrete implementations. This keeps browser resource ownership replaceable while preserving one DSH-facing tool layer.
 
 ## Layer ownership
 
