@@ -44,11 +44,17 @@ Domain 继续发布 `mcp__chrome__*` 工具，包括 `new_page`、`click`、`tak
 
 ## 会话与清理
 
-每个 Agent 首次调用时创建独立 MCP 服务进程；服务使用 `--isolated` 启动带临时用户目录的 Chrome。同一 Agent 复用连接，不同 Agent 不共享浏览器配置。与旧实现相比，这提高了进程隔离程度，也增加了多 Agent 的资源开销。
+每个 Agent 首次调用时创建独立 MCP 服务进程，同一 Agent 复用连接。浏览器数据是否共享取决于 Domain 的设置：
+
+- `userDataDir` 为空：使用 `--isolated`，每个 Agent 使用独立临时用户目录。
+- `userDataDir` 非空且 `sessionIsolation: false`（默认）：使用 `--user-data-dir`，按工作目录名称和浏览器复用持久化目录。不同 Agent 可使用同一目录，但同一目录同时只能供一个浏览器会话使用。
+- `userDataDir` 非空且 `sessionIsolation: true`：进一步按会话身份分配目录；同一工作目录下恢复相同会话 ID 时复用原数据。
+
+目录规则及缺少会话 ID 时的行为见 [Domain 配置](../browser-use-domain/README.md#配置)。
 
 Agent 的 `session.header.cwd` 通过 MCP `roots/list` 传递，同时用作服务工作目录；没有该字段时使用 Host 工作目录。标准输出只用于 MCP 协议，标准错误单独接入 debug 日志。关闭使用统计、CrUX 查询与更新检查；保留网络请求头脱敏与文件路径限制。
 
-`release(owner)` 关闭该 Agent 的 MCP 连接，SDK 关闭 stdin，上游服务负责关闭浏览器并退出。设置中的路径或 headless 改变时回收所有会话。热切换释放旧 owner 会话，但保留后端可再次激活；插件销毁最终关闭全部连接。调用与清理串行执行，避免在工具执行中途回收资源。
+`release(owner)` 关闭该 Agent 的 MCP 连接，SDK 关闭 stdin，上游服务负责关闭浏览器并退出。`browserPath`、`headless`、`userDataDir` 或 `sessionIsolation` 改变时回收所有会话。热切换释放旧 owner 会话，但保留后端可再次激活；插件销毁最终关闭全部连接。调用与清理串行执行，避免在工具执行中途回收资源。
 
 连接建立失败不会缓存失败实例。服务意外退出后，当前调用报错，下一次调用重新连接；不会自动重放可能已产生副作用的操作。
 

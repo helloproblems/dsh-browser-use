@@ -2,7 +2,11 @@
 
 中文 | [English](README.en.md)
 
-通过官方 `@playwright/mcp@0.0.80` 和 MCP SDK 接入 Microsoft Edge。使用公开 `createConnection()` API 与 `InMemoryTransport` 交换 MCP 消息，无需子进程、调试端口或单独配置 MCP 服务。
+通过官方 `@playwright/mcp@0.0.80` 和 MCP SDK 接入 Microsoft Edge。使用公开 `createConnection()` API 与 `InMemoryTransport` 在同一 Host 进程内交换 MCP 消息，无需独立的 MCP 服务子进程或监听端口。
+
+```text
+DSH Domain → MCP Client → InMemoryTransport (JSON-RPC) → @playwright/mcp → playwright-core → Edge
+```
 
 后端使用匹配版本的 `playwright-core` 持有浏览器和上下文，并通过 `createConnection` 的公开 context getter 交给 MCP。关闭会等待启动中的资源、上下文和浏览器全部释放，随后才允许复用持久化目录；重复关闭复用同一个清理任务。`browser_close` 同样释放后端持有的资源。
 
@@ -24,9 +28,9 @@
     toolCallTimeoutMs: 120000
 ```
 
-空路径使用系统 Edge。设置页切换类型会清空旧路径并热切换后端，无需重启。已有用户设置优先于 bundle 默认值。
+空路径使用系统 Edge。设置页切换浏览器类型会保留已填写的路径；若路径与新类型不匹配，需要清空路径以自动发现，或重新选择对应的可执行文件后才能保存。保存后热切换后端，无需重启。已有用户设置优先于 bundle 默认值。
 
-Agent 销毁关闭该 Agent 的会话；实际路径或 headless 设置变化会回收所有会话；插件销毁关闭所有连接。生命周期与工具执行串行化，避免执行中途清理；目前不同 Agent 的工具调用也串行执行。后端 `toolCallTimeoutMs` 控制 MCP 请求超时，默认 120 秒；Domain 超时独立配置。
+Agent 销毁关闭该 Agent 的会话；`browserPath`、`headless`、`userDataDir` 或 `sessionIsolation` 改变时回收所有会话；插件销毁关闭所有连接。生命周期与工具执行串行化，避免执行中途清理；目前不同 Agent 的工具调用也串行执行。后端 `toolCallTimeoutMs` 控制 MCP 请求超时，默认 120 秒；Domain 超时独立配置。
 
 工作目录通过 MCP roots 传递。启用上游 core 工具；Domain 通过附件服务将截图提供给模型。目录留空时使用临时隔离会话，配置用户数据目录后保留登录状态。当前不提供扩展/CDP 接管模式。依赖版本已固定，升级须重跑兼容性测试。
 

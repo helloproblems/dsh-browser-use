@@ -41,11 +41,17 @@ A non-empty browser path is passed via `--executable-path`; otherwise Domain dis
 
 ## Sessions and cleanup
 
-Each Agent lazily creates a separate MCP server process, which launches Chrome with `--isolated` and a temporary profile. Calls from the same Agent reuse the connection; different Agents do not share profiles. This provides stronger process isolation at a higher multi-Agent resource cost than the old shared browser implementation.
+Each Agent lazily creates a separate MCP server process and reuses its connection. Profile sharing depends on the Domain settings:
+
+- Empty `userDataDir`: use `--isolated`, with a separate temporary profile for each Agent.
+- Non-empty `userDataDir` and `sessionIsolation: false` (default): use `--user-data-dir`, reusing a persistent directory by workdir name and browser. Different Agents can use the same directory, but only one browser session can use it at a time.
+- Non-empty `userDataDir` and `sessionIsolation: true`: further partition directories by session identity. Restoring the same session ID in the same workdir reuses its data.
+
+See [Domain configuration](../browser-use-domain/README.en.md#configuration) for directory rules and behavior when a session ID is absent.
 
 The Agent workspace is supplied through MCP `roots/list` and used as the server cwd, falling back to the Host cwd. stdout is reserved for MCP; stderr is drained into debug logs. Usage statistics, CrUX and update checks are disabled; network header redaction and file path restrictions remain enabled.
 
-Releasing an Agent closes its MCP connection. The SDK ends stdin, and the upstream server closes the browser and exits. Path/headless changes recycle sessions. Hot switching releases old owners without permanently disposing the backend. Plugin disposal closes all connections. Calls and cleanup are serialized.
+Releasing an Agent closes its MCP connection. The SDK ends stdin, and the upstream server closes the browser and exits. Changes to `browserPath`, `headless`, `userDataDir`, or `sessionIsolation` recycle all sessions. Hot switching releases old owners without permanently disposing the backend. Plugin disposal closes all connections. Calls and cleanup are serialized.
 
 `execute` accepts an optional cancellation signal. A cancelled queued call never starts its tool. Cancellation during execution forwards the signal to MCP and closes the owner's connection to stop browser work. MCP timeouts and connection errors also release that connection, and subsequent calls wait until cleanup completes.
 

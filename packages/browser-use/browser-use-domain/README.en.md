@@ -118,9 +118,9 @@ This is the only package in the family that directly changes model capabilities.
 
 ## Known limitations
 
-- Backend selection is composition-time configuration and is not exposed as a live GUI setting.
+- `backend` is the registry alias for the initial browser type and belongs to composition configuration; the GUI's `browserType` selects Chrome or Edge at runtime.
 - Edge uses Playwright MCP. Enable both backend plugins to switch browsers through settings without restarting.
-- The backend tool catalog is captured once per activation; settings changes do not add or remove tools.
+- Settings changes within the same backend preserve its tool catalog. A successful backend switch registers the target's tools and unregisters the old tools. An unavailable target or failed reconfiguration leaves the previous catalog active.
 - Reconfiguration failures are warnings rather than an unhealthy plugin state, so tools may stay registered while the backend cannot connect.
 - Model output supports text and screenshots saved by the attachment service; other MCP blocks remain available in the raw tool value.
 - The settings client follows `ctx.locale.getLocale().active`: Chinese (including regional variants) uses Chinese copy; other locales use English. Navigation labels, fields, buttons, and validation update immediately without reloading settings, losing drafts, or interrupting saves and directory selection. Diagnostic details returned by external services retain their original text.

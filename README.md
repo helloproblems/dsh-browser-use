@@ -77,7 +77,7 @@ pnpm pack:bundle
 
 workspace 模式为 `packages/*/*`。测试跟随所属 package 存放，`scripts/build.mjs` 会生成四个 Host bundle 和 Domain 客户端模块。`pnpm pack --dry-run` 只预览普通 package 内容，不会生成文件。
 
-TypeScript 工程布局、源码测试和构建流程见[开发指南](docs/development)。
+TypeScript 工程布局、源码测试和构建流程见[开发指南](docs/development.md)。
 
 ## 安装到 DSH
 
@@ -132,10 +132,10 @@ pnpm --dir C:\path\to\deepseek-harness dsh plugin --profile web add file:C:/path
 
 ## 已知限制
 
-- Edge 使用隔离会话，不接管日常浏览器窗口，不跨重启保留登录状态。
+- Edge 管理本插件启动的浏览器会话，不接管日常浏览器窗口。
 - 在设置页保存浏览器类型即可热切换，无需重启；两个后端插件须已启用。
-- Chrome 通过标准 MCP stdio 协议连接 `chrome-devtools-mcp@1.8.0`；升级须验证 CLI 参数和工具协议兼容性。
-- 浏览器状态只存在于当前进程，Host 重启后不会恢复。
+- Chrome 通过标准 MCP stdio 协议连接 `chrome-devtools-mcp@1.9.0`；升级须验证 CLI 参数和工具协议兼容性。
+- Chrome 和 Edge 在 `userDataDir` 为空时使用临时隔离会话；配置持久化目录后，复用同一目录可继续使用已保存的登录等数据。Host 重启后，插件不会恢复旧 MCP 连接或运行中的工具调用。
 - 测试覆盖 MCP 工具发现与资源生命周期；设置 `EDGE_SMOKE=1` 可运行本机 Edge 导航、点击和会话隔离测试。
 
 ## 许可证

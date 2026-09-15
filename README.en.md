@@ -132,10 +132,10 @@ Use `pnpm pack:bundle` for an unpublished local installation. A plain `pnpm pack
 
 ## Known limitations
 
-- Edge uses isolated sessions; it does not attach to everyday browser windows or persist logins across restarts.
+- Edge manages browser sessions launched by this plugin and does not attach to everyday browser windows.
 - Browser settings hot-switch the active backend without restarting. Both provider plugins must be enabled.
-- Chrome connects to `chrome-devtools-mcp@1.8.0` through standard MCP stdio; upgrades require CLI and tool protocol compatibility checks.
-- Browser state is process-local and is not restored after a Host restart.
+- Chrome connects to `chrome-devtools-mcp@1.9.0` through standard MCP stdio; upgrades require CLI and tool protocol compatibility checks.
+- Chrome and Edge use temporary isolated sessions when `userDataDir` is empty. Configuring a persistent directory allows saved login and other profile data to be reused from the same directory. After a Host restart, the plugin does not restore old MCP connections or in-flight tool calls.
 - Tests cover MCP discovery and lifecycle. Set `EDGE_SMOKE=1` to test navigation, clicking and session isolation in installed Edge.
 
 ## License

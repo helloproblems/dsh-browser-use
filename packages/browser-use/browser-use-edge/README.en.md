@@ -2,7 +2,11 @@
 
 [中文](README.md) | English
 
-Microsoft Edge backend using pinned `@playwright/mcp@0.0.80` and the official MCP SDK. The public `createConnection()` API and `InMemoryTransport` exchange real MCP messages without subprocesses or listening ports.
+Microsoft Edge backend using pinned `@playwright/mcp@0.0.80` and the official MCP SDK. The public `createConnection()` API and `InMemoryTransport` exchange MCP messages within the same Host process, without a separate MCP server subprocess or listening port.
+
+```text
+DSH Domain → MCP Client → InMemoryTransport (JSON-RPC) → @playwright/mcp → playwright-core → Edge
+```
 
 The backend owns its browser and context through the matching `playwright-core` version and supplies the context using the public `createConnection` context getter. Shutdown waits for pending launches, contexts, and browsers to finish closing before a persistent profile can be reused. Repeated close calls share the same cleanup promise. `browser_close` also releases these owned resources.
 
@@ -24,9 +28,9 @@ The shipped bundle enables both backends and initially selects Chrome. Switch to
     toolCallTimeoutMs: 120000
 ```
 
-An empty path selects system Edge. Changing browser type in settings clears the old path and switches backends without restarting. Stored user settings override bundle defaults.
+An empty path selects system Edge. Changing browser type in settings preserves the entered path. If it does not match the new type, clear it for automatic discovery or select the correct executable before saving. Saving switches backends without restarting. Stored user settings override bundle defaults.
 
-Agent disposal closes its session. Changes to path or headless settings recycle sessions; plugin disposal closes all connections. Calls and lifecycle operations are serialized, including calls from different Agents. Backend `toolCallTimeoutMs` controls MCP request timeout (default 120 seconds); Domain timeout is configured separately.
+Agent disposal closes its session. Changes to `browserPath`, `headless`, `userDataDir`, or `sessionIsolation` recycle all sessions; plugin disposal closes all connections. Calls and lifecycle operations are serialized, including calls from different Agents. Backend `toolCallTimeoutMs` controls MCP request timeout (default 120 seconds); Domain timeout is configured separately.
 
 Workspace paths are sent via MCP roots. Core tools are enabled, and Domain delivers screenshots to the model through the attachment service. A blank user data directory uses temporary isolated sessions; a configured directory preserves login state. This integration does not attach through extensions/CDP. Revalidate compatibility when upgrading dependencies.
 
